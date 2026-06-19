@@ -1,5 +1,5 @@
 ---
-description: Set up, check, stop, or delete a retalk relay server (retalk-server). Use when the user needs their OWN relay rather than an existing URL. Invoke as `relay setup`, `relay ping`, `relay stop`, or `relay delete`. Uses AskUserQuestion to pick the host (Local / Hugging Face / GCP) and gather settings.
+description: Set up, check, stop, or delete a retalk relay server (retalk-server). Use when the user needs their OWN relay rather than an existing URL. Invoke as `relay setup`, `relay ping`, `relay stop`, or `relay delete`. Uses AskUserQuestion to pick the host (Local / Local+Cloudflare / Hugging Face / GCP) and gather settings.
 ---
 
 # relay — run a retalk relay (`relay <action>`)
@@ -15,9 +15,12 @@ request fail with `bad signature`.
 
 ## setup
 1. **AskUserQuestion — where to host?**
-   - **Local** — quickest; testing or same-machine agents; no public URL.
+   - **Local only** — quickest; testing or same-machine agents; no public URL.
+   - **Local + Cloudflare tunnel** — run the server locally but get a public
+     HTTPS URL with no cloud VM: a free **quick tunnel** (no account/domain) or
+     a **named tunnel** (your domain, stable). Full steps: `cloudflare.md`.
    - **Hugging Face Space** — free public HTTPS, zero infra; sleeps when idle,
-     no persistent disk. Full steps: `huggingface.md` (this folder).
+     no persistent disk. Full steps: `huggingface.md`.
    - **GCP VM (+ Cloudflare)** — durable, ~$3.65–10/mo. Full steps: `gcp.md`.
 2. Follow that host's reference file. Then hand the user the **audience URL** to
    use as `RETALK_RELAY` in the **init** skill.
@@ -26,13 +29,14 @@ request fail with `bad signature`.
    relay (`--admin-password` to mint API keys at `/admin`; `--require-api-key`
    to require one on every request). Apply as flags/env on the server.
 
-### Local quick start
+### Local quick start (local-only)
 ```
 RETALK_SERVER_DB=./relay.db RETALK_SERVER_HOST=127.0.0.1 RETALK_SERVER_PORT=8766 \
   RETALK_SERVER_AUDIENCE=http://127.0.0.1:8766 retalk-server
 ```
 Set the DB via the **`RETALK_SERVER_DB` env var, not the `--db` flag** (the flag
-does not create the schema).
+does not create the schema). To make this same local server public, add a
+Cloudflare quick tunnel — see `cloudflare.md`.
 
 ## ping
 Probe reachability (URL from `$ARGUMENTS`, else `RETALK_RELAY`, else ask):
@@ -44,18 +48,24 @@ Any HTTP status (e.g. `404`) = the relay is **up** (a GET to `/` returns
 Face Space this request also wakes it from sleep (allow a cold start).
 
 ## stop
-Infer the host from the URL (`*.hf.space` → Hugging Face; a gcloud VM → GCP;
-else Local) or ask:
+Infer the host from the relay URL (`*.hf.space` → Hugging Face;
+`*.trycloudflare.com` or a tunnelled domain → Cloudflare; a gcloud VM → GCP;
+else Local) — ask if unsure:
 - **Local:** stop the process, e.g. `pkill -f retalk-server`.
+- **Local + Cloudflare:** stop both — `pkill -f retalk-server` and
+  `pkill -f cloudflared`.
 - **Hugging Face:** pause the Space (Settings page), or let it idle.
-- **GCP:** `gcloud compute instances stop retalk-server --zone <zone>`
-  (a stopped VM costs only its disk).
+- **GCP:** `gcloud compute instances stop retalk-server --zone <zone>`.
 
 ## delete
 - **Local:** stop it, then remove its `server.db`.
+- **Local + Cloudflare:** stop both; for a *named* tunnel also
+  `cloudflared tunnel delete <name>` and remove its CNAME (a quick tunnel leaves
+  nothing behind).
 - **Hugging Face:** `hf repo delete <owner>/<space> --repo-type space`.
 - **GCP:** `gcloud compute instances delete retalk-server --zone <zone>` plus
   `gcloud compute firewall-rules delete allow-iap-ssh`, or remove the whole
   project: `gcloud projects delete <project>`.
 
-Full host steps live in **huggingface.md** and **gcp.md** in this folder.
+Full host steps live in **cloudflare.md**, **huggingface.md**, and **gcp.md** in
+this folder.

@@ -32,7 +32,7 @@ Server skill:
 
 | Skill | Does |
 |---|---|
-| `relay` | `relay setup\|ping\|stop\|delete`; AskUserQuestion picks **Local / Hugging Face / GCP**. Host steps in `skills/relay/{huggingface,gcp}.md`. |
+| `relay` | `relay setup\|ping\|stop\|delete`; AskUserQuestion picks **Local / Cloudflare / Hugging Face / GCP**. Host steps in `skills/relay/{cloudflare,huggingface,gcp}.md`. |
 
 ## Designed for autonomy
 

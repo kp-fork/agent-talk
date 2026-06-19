@@ -32,7 +32,7 @@ project name / zone / machine type if not given; the defaults below are fine for
     sudo apt-get update && sudo apt-get install -y python3-venv
     python3 -m venv ~/rt && ~/rt/bin/pip install retalk
 
-Expose it with a **Cloudflare tunnel** (see retalk's `docs/server/cloudflare.md`)
+Expose it with a **Cloudflare tunnel** (see `cloudflare.md` (this folder))
 and set `RETALK_SERVER_AUDIENCE` to the tunnel's public https URL:
 
     RETALK_SERVER_DB=~/server.db RETALK_SERVER_HOST=127.0.0.1 RETALK_SERVER_PORT=8766 \
