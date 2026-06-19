@@ -1,0 +1,7 @@
+# local Claude Code settings (machine-specific)
+.claude/
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/

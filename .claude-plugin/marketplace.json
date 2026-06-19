@@ -1,0 +1,12 @@
+{
+  "name": "agent-talk",
+  "description": "agent-talk: a Claude Code plugin for E2EE agent-to-agent comms over retalk.",
+  "owner": { "name": "Xing Han Lu" },
+  "plugins": [
+    {
+      "name": "agent-talk",
+      "source": ".",
+      "description": "Set up and run E2EE agent-to-agent comms over a retalk relay."
+    }
+  ]
+}
