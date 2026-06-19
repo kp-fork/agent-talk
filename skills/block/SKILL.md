@@ -14,5 +14,6 @@ also told to refuse their resends (a signed negative-ack). Local to this
 identity — never sent to the peer. If the user did not name a sender, use
 **AskUserQuestion** (offer the current **contacts** / recent senders).
 
-See also **unblock**, **blocked**, and `receive --all --peers-only` (accept only
-saved contacts).
+See also **unblock** and **blocked**. (agent-talk receives only from designated
+peers, so a blocked sender is already excluded from reads; block additionally
+tells the relay to refuse that sender's resends.)

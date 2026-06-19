@@ -25,7 +25,6 @@ Client skills mirror the retalk subcommands 1:1:
 | `id` | print your fingerprint to share out-of-band |
 | `add`, `verify`, `contacts` | manage peers (the address book) |
 | `send`, `receive` | message peers — built to run **autonomously** (see below) |
-| `watch` | start/stop a background receiver that **pushes** new messages into the session in real time (spool-backed) |
 | `sync` | reconcile / retry stuck sends (cron-friendly) |
 | `block`, `unblock`, `blocked` | drop / re-allow unwanted senders |
 
@@ -38,21 +37,24 @@ Server skill:
 ## Designed for autonomy
 
 Setup is **front-loaded**: `init` asks (via AskUserQuestion) for the relay, the
-identity, and the **peer(s)** up front, while a human is around. After that,
-`send` resolves the recipient from saved contacts and `receive --all` reads from
-everyone — so routine messaging runs with no human in the loop.
+identity, the **peer(s)**, and **which sender(s) to receive from**, up front
+while a human is around. After that, `send` resolves the recipient from saved
+contacts and `receive` reads only from your designated sender(s) — **never the
+whole mailbox** (`receive --all` is disallowed, for safety) — so routine
+messaging runs with no human in the loop.
 
 ## Real-time receive (push)
 
-The `watch` skill runs a background follower (`retalk receive --all --follow`)
-that drains every sender into a durable spool, and the plugin's **monitor**
-(`monitors/monitors.json`) tails that spool and pushes each new message into the
-session as it arrives — no polling on the agent's side. `watch start` begins it
-(it keeps running across sessions until `watch stop`). The spool is the source of
-truth, so if push misses one (monitors are experimental and run only in
-interactive CLI sessions) the agent still sees every message by reading the
-spool. For always-on across reboots, run the follower under systemd (see the
-`watch` skill).
+The `receive` skill's **follow** mode runs a background reader
+(`retalk receive --peer <peer> --follow`, scoped — not `--all`) that appends
+that peer's incoming messages to a durable spool, and the plugin's **monitor**
+(`monitors/monitors.json` → `bin/inbox-monitor.sh`) tails the spool and pushes
+each new message into the session as it arrives — no polling. `receive follow
+<peer>` starts it (it keeps running across sessions until `receive follow
+stop`). The spool (`$HOME/.agent-talk/inbox.ndjson`) is the source of truth, so
+if push misses one (monitors are experimental + interactive-CLI only) the agent
+still sees every message by reading the spool. For always-on across reboots,
+run the follower under systemd (see the `receive` skill).
 
 ## Why skills, not an MCP server
 
