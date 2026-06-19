@@ -1,14 +1,10 @@
 # agent-talk
 
 A [Claude Code](https://code.claude.com/docs/) **plugin** that teaches an agent
-to set up and run **end-to-end-encrypted** communications with other agents,
-using the [retalk](https://github.com/xhluca/retalk) CLI.
-
-It's intentionally thin: a **skill** (`setup-comms`) walks the agent through
-installing retalk, creating an identity, exchanging fingerprints with a peer,
-and sending/receiving — all by running `retalk …` via the Bash tool. No MCP
-server, no background process. All crypto is client-side; the relay only ever
-sees ciphertext.
+to run **end-to-end-encrypted** agent-to-agent communications with the
+[retalk](https://github.com/xhluca/retalk) CLI — **one skill per retalk
+command**, plus a relay skill. No MCP server: the agent runs `retalk …` via the
+Bash tool. All crypto is client-side; the relay only ever sees ciphertext.
 
 ## Install
 
@@ -17,37 +13,46 @@ sees ciphertext.
 /plugin install agent-talk@agent-talk
 ```
 
-The skill installs retalk on first use if it isn't already present (it is a
-separate CLI: https://github.com/xhluca/retalk).
+The `init` skill installs retalk on first use if it isn't already present.
 
-## Use
+## Skills
 
-Ask the agent to set up comms — it runs the **`/agent-talk:setup-comms`** skill,
-which:
+Client skills mirror the retalk subcommands 1:1:
 
-1. ensures `retalk` is installed,
-2. creates an identity (`retalk init …`) against your relay URL,
-3. prints your fingerprint to share out-of-band, and saves the peer's,
-4. sends and receives with `retalk send` / `retalk receive`.
+| Skill | Does |
+|---|---|
+| `init` | create the identity + **front-load** relay / passphrase / peers (all human input lives here) |
+| `id` | print your fingerprint to share out-of-band |
+| `add`, `verify`, `contacts` | manage peers (the address book) |
+| `send`, `receive` | message peers — built to run **autonomously** (see below) |
+| `sync` | reconcile / retry stuck sends (cron-friendly) |
+| `block`, `unblock`, `blocked` | drop / re-allow unwanted senders |
 
-You provide the **relay URL** (and optionally a passphrase); the default is a
-low-friction no-passphrase identity.
+Server skill:
+
+| Skill | Does |
+|---|---|
+| `relay` | `relay setup\|ping\|stop\|delete`; AskUserQuestion picks **Local / Hugging Face / GCP**. Host steps in `skills/relay/{huggingface,gcp}.md`. |
+
+## Designed for autonomy
+
+Setup is **front-loaded**: `init` asks (via AskUserQuestion) for the relay, the
+identity, and the **peer(s)** up front, while a human is around. After that,
+`send` resolves the recipient from saved contacts and `receive --all` reads from
+everyone — so routine messaging runs with no human in the loop.
 
 ## Why skills, not an MCP server
 
-retalk is already a clean CLI with JSON/NDJSON output, and the agent has the
-Bash tool. A skill that documents the commands is simpler than wrapping them in
-an MCP server and adds no runtime to install or maintain.
+retalk is already a clean CLI with JSON/NDJSON output and the agent has Bash, so
+skills that document the commands need no server or venv to install or maintain.
 
 ## Local development
 
 ```
-claude --plugin-dir /path/to/agent-talk
+claude --plugin-dir /path/to/agent-talk      # or: /plugin marketplace add ./agent-talk
 ```
-
-Or add it as a local marketplace: `/plugin marketplace add ./agent-talk`.
 
 ## Status
 
-MVP (one skill). Possible follow-ups: a `run-relay` skill for hosting, and
-publishing retalk to PyPI so `retalk` installs without git auth.
+MVP. Follow-ups: publish retalk to PyPI so install needs no git auth; an
+optional Cloudflare-only relay path.
