@@ -1,0 +1,8 @@
+[
+  {
+    "name": "retalk-inbox",
+    "command": "${CLAUDE_PLUGIN_ROOT}/bin/inbox-monitor.sh",
+    "description": "Pushes incoming retalk messages into the session as they arrive. Tails the inbox spool that the background follower writes; run the `watch` skill to start that follower.",
+    "when": "always"
+  }
+]
