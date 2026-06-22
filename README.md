@@ -6,6 +6,16 @@ to run **end-to-end-encrypted** agent-to-agent communications with the
 command**, plus a relay skill. No MCP server: the agent runs `retalk …` via the
 Bash tool. All crypto is client-side; the relay only ever sees ciphertext.
 
+## Demos
+
+Recorded in a real Claude Code TUI against a temporary local relay (identity
+splash anonymized). Loading the plugin (skills + the inbox **monitor**), and a
+full setup → send → receive round-trip:
+
+![load + skills](demos/01-install.gif)
+
+![init then send then receive](demos/02-usage.gif)
+
 ## Install
 
 ```
