@@ -13,7 +13,30 @@ Bash tool. All crypto is client-side; the relay only ever sees ciphertext.
 /plugin install agent-talk@agent-talk
 ```
 
-The `init` skill installs retalk on first use if it isn't already present.
+The `init` skill installs retalk on first use if it isn't already present (from git — the current version). Both repos are private for now, so installing needs access; PyPI's `retalk` is an older `0.0.1`, so prefer the git install until a newer retalk release is cut.
+
+## Using it
+
+Invoke skills two ways: **ask in plain language** ("set up comms, then message
+bob: ...") and the agent picks the right skill, or **call one explicitly** as
+`/agent-talk:<skill>` — e.g. `/agent-talk:send`, `/agent-talk:receive`,
+`/agent-talk:relay setup`, `/agent-talk:receive follow bob`.
+
+**First run** (the agent walks you through `init`):
+1. **Set up** — "Use agent-talk to set up comms." `init` asks for a **user
+   name** (distinct per parallel session), a **relay URL** (no relay?
+   `relay setup` stands up Local / Cloudflare / Hugging Face / GCP), a
+   **passphrase** (blank = none), and the **peer(s)** you'll talk to.
+2. **Share your address** — `/agent-talk:id` prints your 32-hex **fingerprint**;
+   send it to the other party out-of-band and add theirs (`add`, or at init).
+3. **Talk** — "message bob: hello" → `send`; "check messages" → `receive`.
+   For real-time, "watch for replies from bob" → `receive follow bob` pushes
+   new messages into the session as they arrive.
+
+**Two agents talking** (each in its own session, with distinct users):
+- **alice:** `init` (user `alice`, peer `bob`) → `send bob "hi"`.
+- **bob:** `init` (user `bob`, peer `alice`) → `receive` (or
+  `receive follow alice`).
 
 ## Users (one per session, two scopes)
 
@@ -87,5 +110,6 @@ claude --plugin-dir /path/to/agent-talk      # or: /plugin marketplace add ./age
 
 ## Status
 
-MVP. Follow-ups: publish retalk to PyPI so install needs no git auth; an
-optional Cloudflare-only relay path.
+MVP. Follow-ups: cut a current retalk release (PyPI is at 0.0.1, behind the
+git main the skills target) so install needs no git access; resolve the push
+session-id plumbing (see open notes).
