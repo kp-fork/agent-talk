@@ -1,8 +1,8 @@
 [
   {
     "name": "retalk-inbox",
-    "command": "${CLAUDE_PLUGIN_ROOT}/bin/inbox-monitor.sh",
-    "description": "Pushes incoming retalk messages into the session as they arrive. Tails the inbox spool that the background follower writes; run `receive follow <peer>` to start that follower.",
+    "command": "${CLAUDE_PLUGIN_ROOT}/bin/inbox-monitor.sh ${CLAUDE_SESSION_ID}",
+    "description": "Pushes this session's incoming retalk messages into the session as they arrive (per-user, resolved via the session->user map that init writes). Run `receive follow <peer>` to start the follower that feeds the spool.",
     "when": "always"
   }
 ]

@@ -5,16 +5,13 @@ description: Print this agent's retalk user id (fingerprint) to share with peers
 # id — your address (fingerprint)
 
 ```
-retalk id            # the 32-hex fingerprint
-retalk id --json     # {"fingerprint","identity_key","name"}
+retalk id --json --dir "$HOME/.agent-talk/users/<user>/identity"   # {"fingerprint","identity_key","name"}
 ```
 
-The fingerprint is the sha256 of your public keys: it is your **address** and
-your **pin** in one, contains no secret, and is safe to post publicly. **Share
-it out-of-band** (chat, email, in person) with anyone who should reach you, and
-ask them for theirs.
+The fingerprint is your address and pin in one — safe to post publicly; **share
+it out-of-band** and ask the peer for theirs. Always target the identity
+**inline** with `--dir "$HOME/.agent-talk/users/<user>/identity"` (env vars like `RETALK_USER`
+are not used — they don't persist between commands). Encrypted identity? prefix
+`RETALK_PASSPHRASE=<secret>`. No relay contact.
 
-Needs the identity to exist (run **init** first) and its passphrase, if any.
-Does not contact the relay.
-
-Next: the peer runs **add** with your fingerprint; you run **add** with theirs.
+> `<user>` = this session's user name, chosen at **init**. Each session uses a distinct, fully isolated user (own store, contacts, inbox), so parallel sessions never collide.

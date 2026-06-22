@@ -5,8 +5,10 @@ description: List the senders currently blocked for this identity. Use to review
 # blocked — list blocked senders
 
 ```
-retalk blocked          # one fingerprint per line (with saved name, if any)
-retalk blocked --json   # one {"fingerprint","name"} per line
+retalk blocked --json --dir "$HOME/.agent-talk/users/<user>/identity"   # {"fingerprint","name"} per line
 ```
 
 Local-only; no relay contact. Manage entries with **block** / **unblock**.
+Target the identity inline with `--dir "$HOME/.agent-talk/users/<user>/identity"`.
+
+> `<user>` = this session's user name, chosen at **init**. Each session uses a distinct, fully isolated user (own store, contacts, inbox), so parallel sessions never collide.

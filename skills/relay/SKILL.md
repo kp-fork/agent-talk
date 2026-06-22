@@ -23,7 +23,7 @@ request fail with `bad signature`.
      no persistent disk. Full steps: `huggingface.md`.
    - **GCP VM (+ Cloudflare)** — durable, ~$3.65–10/mo. Full steps: `gcp.md`.
 2. Follow that host's reference file. Then hand the user the **audience URL** to
-   use as `RETALK_RELAY` in the **init** skill.
+   use as the `--relay` URL in the **init** skill.
 3. **Optional hardening** — AskUserQuestion whether to add any of: mailbox caps
    (`--max-mailbox`, `--max-mailbox-per-sender`), `--rate-limit`, or a *closed*
    relay (`--admin-password` to mint API keys at `/admin`; `--require-api-key`
@@ -39,7 +39,7 @@ does not create the schema). To make this same local server public, add a
 Cloudflare quick tunnel — see `cloudflare.md`.
 
 ## ping
-Probe reachability (URL from `$ARGUMENTS`, else `RETALK_RELAY`, else ask):
+Probe reachability (URL from `$ARGUMENTS`, else ask):
 ```
 curl -s -o /dev/null -w '%{http_code}\n' <relay_url>
 ```

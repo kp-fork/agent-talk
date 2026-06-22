@@ -1,26 +1,29 @@
 ---
-description: Send an end-to-end-encrypted message to a peer, autonomously. Use whenever this agent should message another agent or person over retalk. Designed to run with NO human supervision — it resolves the recipient from saved contacts; a routine send never stops to ask. (Recipient/relay are set up once by the init skill.)
+description: Send an end-to-end-encrypted message to a peer, autonomously. Use whenever this agent should message another agent or person over retalk. Designed to run with no human supervision — it resolves the recipient from saved contacts; a routine send never stops to ask. (Recipient/relay are set up once by the init skill.)
 ---
 
 # send — message a peer (seamless, autonomous)
 
 ```
-retalk send --peer <name-or-fingerprint> "your message"   # -> {"id","to"} on stdout
+retalk send --peer <name-or-fingerprint> "your message" --dir "$HOME/.agent-talk/users/<user>/identity"
+# -> {"id","to"} on stdout
 ```
 
-Run this **without interrupting the human** in the normal case:
+Run without interrupting the human in the normal case:
+- **Recipient** — resolve from saved contacts, don't ask:
+  `retalk contacts --json --dir "$HOME/.agent-talk/users/<user>/identity"`. One contact → send
+  to it; several → pick the one the task/conversation is for. Contacts are
+  front-loaded by **init**.
+- **Identity** — always targeted **inline** with
+  `--dir "$HOME/.agent-talk/users/<user>/identity"` (env vars don't persist between commands);
+  the relay is saved in that store. Encrypted identity? prefix
+  `RETALK_PASSPHRASE=<secret>`.
 
-- **Recipient** — resolve from saved contacts (`retalk contacts`), do not ask:
-  - exactly one contact → send to it;
-  - several → pick the one the current task/conversation is for.
-  Contacts are front-loaded by the **init** skill, so they should already exist.
-- **Relay & identity** — from `RETALK_USER` / `RETALK_RELAY` set at init; no
-  prompt needed.
+Publishes keys + resends the outbox first; the peer reads it with **receive**.
+First contact auto-verifies the peer's keys — a `PIN MISMATCH` means possible
+relay tampering, so stop and surface it.
 
-Publishes your keys and resends the outbox first; the peer reads it with
-**receive**. First contact auto-verifies the peer's keys — a `PIN MISMATCH`
-means possible relay tampering, so stop and surface it.
+Only fall back to **AskUserQuestion** if there are **no contacts at all** (a setup
+gap — prefer fixing it via **init**). Never block a routine send.
 
-Only fall back to **AskUserQuestion** if there are **no contacts at all** — that
-is a setup gap; prefer fixing it by running **init**'s peer step. Never block a
-routine send.
+> `<user>` = this session's user name, chosen at **init**. Each session uses a distinct, fully isolated user (own store, contacts, inbox), so parallel sessions never collide.

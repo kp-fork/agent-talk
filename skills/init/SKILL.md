@@ -1,66 +1,77 @@
 ---
-description: Create this agent's retalk identity, explain how retalk works, AND front-load who it talks to and receives from. Use for first-time setup, or when a command fails with "no identity". All human input belongs here — ask with AskUserQuestion for the relay, name, passphrase, the peer(s) to message, and which sender(s) to receive from — so send/receive run autonomously and safely afterward.
+description: Set up THIS session's retalk user (a REQUIRED, distinct name), explain how retalk works, and front-load who it talks to and receives from. Use for first-time setup, or when a command fails with "no identity". agent-talk has no default user — every session picks a user name with AskUserQuestion (distinct per parallel session so they never collide), then all human input (relay, passphrase, peers, receive source) is gathered here so send/receive run autonomously afterward.
 ---
 
-# init — set up this agent's comms (front-loaded)
+# init — set up this session's user (front-loaded)
 
-Front-loads every human decision so that afterward **send and receive run
-unattended**.
+agent-talk has **no default user**: each session runs as a *named* user, fully
+isolated under `$HOME/.agent-talk/users/<user>/`, so multiple sessions in
+parallel never collide. Front-load every human decision here so that afterward
+**send and receive run unattended**.
 
 ## How retalk works (read once)
 End-to-end-encrypted messages through a relay that is **never trusted** (stores
 only public keys + ciphertext; every request is signed). Your **user id** is a
 32-hex **fingerprint** of your public keys — both your address and the pin peers
-verify you by; share it over a channel the relay does not control. Order:
-`init` (this) → share your `id` → `add` peers → `send`/`receive`.
+verify you by; share it over a channel the relay does not control.
 
 ## 1. Ensure retalk is installed
 `retalk --help`; if missing: `uv tool install git+https://github.com/xhluca/retalk`
 (or `pipx install git+https://github.com/xhluca/retalk`).
 
-## 2. Gather identity settings — ask with AskUserQuestion if not given
-- **Relay URL** — must equal the relay's audience. None yet? Paste an existing
-  URL, or stand one up with the `relay` skill (`relay setup`).
-- **Name** — short handle (also the default display name).
-- **Passphrase** — *no passphrase* (recommended for agents) or *a passphrase*
-  (`RETALK_PASSPHRASE`, required on every later command).
+## 2. Choose this session's USER NAME (required) — AskUserQuestion
+Pick a short user name for THIS session (e.g. `alice`). It is `<user>` everywhere
+below; this session's home is `$HOME/.agent-talk/users/<user>/`.
+- **Distinct per parallel session** — two live sessions must not share a name or
+  their inboxes/identities collide.
+- Reusing a name later = reusing that same identity (stable fingerprint).
 
-## 3. Create the identity
+Collision guard — if a follower is already live for that name, it's likely in use
+by another session, so pick a different one:
 ```
-retalk init --user <name> --relay <RELAY_URL> --no-passphrase --display-name <name>
-# or, with a passphrase (keep it off the command line):
-RETALK_PASSPHRASE=<secret> retalk init --user <name> --relay <RELAY_URL> --display-name <name>
-```
-
-## 4. Set the defaults for later commands
-```
-export RETALK_USER=<name>
-export RETALK_RELAY=<RELAY_URL>   # plus RETALK_PASSPHRASE=<secret> if you set one
+for f in "$HOME/.agent-talk/users/<user>"/follow.*.pid; do
+  [ -e "$f" ] && kill -0 "$(cat "$f")" 2>/dev/null && echo "WARN: user <user> looks active in another session — choose a different name"
+done
 ```
 
-## 5. Front-load the peer(s)
-Establish **who this agent talks to**, now, while a human is available. Use
-**AskUserQuestion** to collect each peer's local name + 32-hex fingerprint
-(exchange out-of-band: yours from `retalk id`, theirs from them), then:
+## 3. Gather relay + passphrase — AskUserQuestion if not given
+- **Relay URL** — must equal the relay's audience. None yet? use the `relay`
+  skill (`relay setup`).
+- **Passphrase** — *no passphrase* (recommended) or *a passphrase* (then prefix
+  every later command `RETALK_PASSPHRASE=<secret>`).
+
+## 4. Create the identity (under this user's dir)
 ```
-retalk add <peer_name> <peer_fingerprint>
+retalk init --dir "$HOME/.agent-talk/users/<user>/identity" --relay <RELAY_URL> --no-passphrase --display-name <user>
+# with a passphrase:
+RETALK_PASSPHRASE=<secret> retalk init --dir "$HOME/.agent-talk/users/<user>/identity" --relay <RELAY_URL> --display-name <user>
+```
+The relay is saved in this store; later commands only pass
+`--dir "$HOME/.agent-talk/users/<user>/identity"` (no env to set — it would not
+persist between commands).
+
+## 5. Register this session's user (enables real-time push)
+So the inbox monitor knows which user this session is, record the mapping:
+```
+mkdir -p "$HOME/.agent-talk/by-session"
+echo "<user>" > "$HOME/.agent-talk/by-session/${CLAUDE_SESSION_ID}"
 ```
 
-## 6. Choose who this agent RECEIVES from (safety — required)
-agent-talk **never** drains the whole mailbox (`receive --all`); it only reads
-from the sender(s) you designate here, so it never processes mail from anyone it
-was not set up to talk to. Use **AskUserQuestion**:
-- **A specific peer** (recommended — the usual case): one of the peers above.
-- **All saved contacts**: read from every peer in your contact list.
-Record the choice:
+## 6. Front-load the peer(s)
+**AskUserQuestion** for each peer's local name + 32-hex fingerprint (exchange
+out-of-band: yours from `retalk id`, theirs from them), then:
 ```
-mkdir -p "$HOME/.agent-talk"
-echo "<peer-name-or-fingerprint>" > "$HOME/.agent-talk/receive-from"   # individual
-# or, for contact-list mode:
-# echo "*contacts*" > "$HOME/.agent-talk/receive-from"
+retalk add <peer_name> <peer_fingerprint> --dir "$HOME/.agent-talk/users/<user>/identity"
 ```
 
-After steps 5–6, **send** and **receive** need no further human input — and
-`receive` only ever pulls from your designated sender(s).
+## 7. Choose who this user RECEIVES from (safety — required)
+agent-talk **never** drains the whole mailbox; it reads only from designated
+senders. **AskUserQuestion**: a specific peer (usual) or all saved contacts.
+```
+echo "<peer-name-or-fingerprint>" > "$HOME/.agent-talk/users/<user>/receive-from"
+# or contact-list mode:  echo "*contacts*" > "$HOME/.agent-talk/users/<user>/receive-from"
+```
 
-Next: share your `id`; then use `send` / `receive` autonomously.
+From now on **this session is user `<user>`** — target it with
+`--dir "$HOME/.agent-talk/users/<user>/identity"` on every command. Next: share
+your `id`; then use `send` / `receive` autonomously.

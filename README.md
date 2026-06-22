@@ -15,13 +15,23 @@ Bash tool. All crypto is client-side; the relay only ever sees ciphertext.
 
 The `init` skill installs retalk on first use if it isn't already present.
 
+## Users (one per session)
+
+agent-talk has **no default user**. Each session runs as a *named* user, fully
+isolated under `~/.agent-talk/users/<name>/` (own keys, contacts, inbox,
+followers). `init` requires a name; give **parallel sessions distinct names** so
+their identities and inboxes never collide. Reusing a name reuses that identity
+(stable fingerprint). Every command targets the session's user inline with
+`--dir "$HOME/.agent-talk/users/<name>/identity"` (Claude Code starts a fresh
+shell per Bash call, so env vars like `RETALK_USER` would not carry over).
+
 ## Skills
 
 Client skills mirror the retalk subcommands 1:1:
 
 | Skill | Does |
 |---|---|
-| `init` | create the identity + **front-load** relay / passphrase / peers (all human input lives here) |
+| `init` | create **this session's named user** + front-load relay / passphrase / peers (all human input lives here) |
 | `id` | print your fingerprint to share out-of-band |
 | `add`, `verify`, `contacts` | manage peers (the address book) |
 | `send`, `receive` | message peers — built to run **autonomously** (see below) |
@@ -36,8 +46,8 @@ Server skill:
 
 ## Designed for autonomy
 
-Setup is **front-loaded**: `init` asks (via AskUserQuestion) for the relay, the
-identity, the **peer(s)**, and **which sender(s) to receive from**, up front
+Setup is **front-loaded**: `init` asks (via AskUserQuestion) for this session's
+user name, the relay, the **peer(s)**, and **which sender(s) to receive from**, up front
 while a human is around. After that, `send` resolves the recipient from saved
 contacts and `receive` reads only from your designated sender(s) — **never the
 whole mailbox** (`receive --all` is disallowed, for safety) — so routine
@@ -45,16 +55,16 @@ messaging runs with no human in the loop.
 
 ## Real-time receive (push)
 
-The `receive` skill's **follow** mode runs a background reader
-(`retalk receive --peer <peer> --follow`, scoped — not `--all`) that appends
-that peer's incoming messages to a durable spool, and the plugin's **monitor**
-(`monitors/monitors.json` → `bin/inbox-monitor.sh`) tails the spool and pushes
-each new message into the session as it arrives — no polling. `receive follow
-<peer>` starts it (it keeps running across sessions until `receive follow
-stop`). The spool (`$HOME/.agent-talk/inbox.ndjson`) is the source of truth, so
-if push misses one (monitors are experimental + interactive-CLI only) the agent
-still sees every message by reading the spool. For always-on across reboots,
-run the follower under systemd (see the `receive` skill).
+`receive follow <peer>` runs a background reader (`retalk receive --peer <peer>
+--follow`, scoped — never `--all`) that appends that peer's messages to the
+user's durable spool (`~/.agent-talk/users/<name>/inbox.ndjson`). The plugin's
+**monitor** (`monitors/monitors.json` → `bin/inbox-monitor.sh`) resolves this
+session's user from the session->user map that `init` writes, tails that user's
+spool, and pushes each new message into the session as it arrives — no polling.
+The spool is the source of truth, so if push misses one (monitors are
+experimental + interactive-CLI only) the agent still sees every message by
+reading the spool. For always-on across reboots, run the follower under systemd
+(see the `receive` skill).
 
 ## Why skills, not an MCP server
 
