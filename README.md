@@ -9,12 +9,14 @@ Bash tool. All crypto is client-side; the relay only ever sees ciphertext.
 ## Demos
 
 Recorded in a real Claude Code TUI against a temporary local relay (identity
-splash anonymized). Loading the plugin (skills + the inbox **monitor**), and a
-full setup → send → receive round-trip:
+splash anonymized; every keystroke typed live). First, loading the plugin — the
+agent lists its skills, with the inbox **monitor** active. Then a natural
+conversation: "alice" asks to be set up, answers the agent's question for "bob"'s
+id, sends a message, and receives bob's reply — a full round-trip.
 
 ![load + skills](demos/01-install.gif)
 
-![init then send then receive](demos/02-usage.gif)
+![natural setup, send, and receive](demos/02-usage.gif)
 
 ## Install
 
@@ -74,11 +76,11 @@ Client skills mirror the retalk subcommands 1:1:
 |---|---|
 | `init` | pick or create this session's user (global or local scope) + front-load relay / passphrase / peers |
 | `id` | print your fingerprint to share out-of-band |
-| `add`, `verify`, `contacts` | manage peers (the address book) |
-| `show`, `share`, `import` | hand a saved contact (nickname + keys) to someone, and save ones shared with you — instead of retyping a fingerprint |
+| `add`, `verify`, `contacts` | manage peers — add, verify, list, show one as a shareable card, or remove |
+| `share`, `import` | hand a saved contact (nickname + keys) to a peer over the relay, and save ones shared with you — instead of retyping a fingerprint (showing a card is `contacts --show`) |
 | `send`, `receive` | message peers — built to run **autonomously** (see below) |
 | `sync` | reconcile / retry stuck sends (cron-friendly) |
-| `block`, `unblock`, `blocked` | drop / re-allow unwanted senders |
+| `block` | drop a sender (`--remove` to re-allow, `--list` to see who's blocked) |
 
 Server skill:
 
@@ -121,5 +123,6 @@ claude --plugin-dir /path/to/agent-talk      # or: /plugin marketplace add ./age
 ## Status
 
 MVP. Follow-ups: cut a current retalk release (PyPI is at 0.0.1, behind the
-git main the skills target) so install needs no git access; resolve the push
-session-id plumbing (see open notes).
+git main the skills target) so install needs no git access; optionally add a
+`history` skill (retalk has a `history` command for messages saved with
+`receive --save-messages`).
