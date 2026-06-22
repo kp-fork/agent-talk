@@ -13,7 +13,7 @@ case "$sid" in ""|*'${'*) exec tail -f /dev/null;; esac      # no session id -> 
 sid="$(printf '%s' "$sid" | tr -c 'A-Za-z0-9._-' '_')"
 map="$HOME/.agent-talk/by-session/$sid"
 while [ ! -f "$map" ]; do sleep 2; done                      # init writes it after we start
-SPOOL="$HOME/.agent-talk/users/$(cat "$map")/inbox.ndjson"
+SPOOL="$(cat "$map")/inbox.ndjson"
 mkdir -p "$(dirname "$SPOOL")" 2>/dev/null || true
 : >> "$SPOOL" 2>/dev/null || true
 while true; do tail -n0 -F "$SPOOL" 2>/dev/null; sleep 1; done

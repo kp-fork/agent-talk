@@ -5,12 +5,12 @@ description: List saved peers (your address book) and whether each is verified. 
 # contacts — list saved peers
 
 ```
-retalk contacts --json --dir "$HOME/.agent-talk/users/<user>/identity"
+retalk contacts --json --dir "<user>/identity"
 # one {"name","fingerprint","identity_key","signing_key","verified"} per line
 ```
 
 Local-only (no relay contact). Use it to resolve who to **send** to. Empty means
 no peers yet — run **add** (or **init**'s peer step). Target the identity inline
-with `--dir "$HOME/.agent-talk/users/<user>/identity"`.
+with `--dir "<user>/identity"`.
 
-> `<user>` = this session's user name, chosen at **init**. Each session uses a distinct, fully isolated user (own store, contacts, inbox), so parallel sessions never collide.
+> `<user>` = this session's **user directory** — an absolute path resolved at **init** (e.g. `~/.agent-talk/users/alice` (global) or `<project>/.agent-talk/users/alice` (local)). Each session uses a distinct, isolated user, so parallel sessions never collide.

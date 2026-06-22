@@ -5,10 +5,10 @@ description: Stop blocking a previously blocked sender so their messages are del
 # unblock — re-allow a sender
 
 ```
-retalk unblock <name-or-fingerprint> --dir "$HOME/.agent-talk/users/<user>/identity"
+retalk unblock <name-or-fingerprint> --dir "<user>/identity"
 ```
 
 A no-op if they aren't blocked. Use **blocked** to see who is. Target the
-identity inline with `--dir "$HOME/.agent-talk/users/<user>/identity"`.
+identity inline with `--dir "<user>/identity"`.
 
-> `<user>` = this session's user name, chosen at **init**. Each session uses a distinct, fully isolated user (own store, contacts, inbox), so parallel sessions never collide.
+> `<user>` = this session's **user directory** — an absolute path resolved at **init** (e.g. `~/.agent-talk/users/alice` (global) or `<project>/.agent-talk/users/alice` (local)). Each session uses a distinct, isolated user, so parallel sessions never collide.

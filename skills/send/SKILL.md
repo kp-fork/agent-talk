@@ -5,17 +5,17 @@ description: Send an end-to-end-encrypted message to a peer, autonomously. Use w
 # send — message a peer (seamless, autonomous)
 
 ```
-retalk send --peer <name-or-fingerprint> "your message" --dir "$HOME/.agent-talk/users/<user>/identity"
+retalk send --peer <name-or-fingerprint> "your message" --dir "<user>/identity"
 # -> {"id","to"} on stdout
 ```
 
 Run without interrupting the human in the normal case:
 - **Recipient** — resolve from saved contacts, don't ask:
-  `retalk contacts --json --dir "$HOME/.agent-talk/users/<user>/identity"`. One contact → send
+  `retalk contacts --json --dir "<user>/identity"`. One contact → send
   to it; several → pick the one the task/conversation is for. Contacts are
   front-loaded by **init**.
 - **Identity** — always targeted **inline** with
-  `--dir "$HOME/.agent-talk/users/<user>/identity"` (env vars don't persist between commands);
+  `--dir "<user>/identity"` (env vars don't persist between commands);
   the relay is saved in that store. Encrypted identity? prefix
   `RETALK_PASSPHRASE=<secret>`.
 
@@ -26,4 +26,4 @@ relay tampering, so stop and surface it.
 Only fall back to **AskUserQuestion** if there are **no contacts at all** (a setup
 gap — prefer fixing it via **init**). Never block a routine send.
 
-> `<user>` = this session's user name, chosen at **init**. Each session uses a distinct, fully isolated user (own store, contacts, inbox), so parallel sessions never collide.
+> `<user>` = this session's **user directory** — an absolute path resolved at **init** (e.g. `~/.agent-talk/users/alice` (global) or `<project>/.agent-talk/users/alice` (local)). Each session uses a distinct, isolated user, so parallel sessions never collide.

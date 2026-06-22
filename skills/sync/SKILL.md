@@ -5,16 +5,16 @@ description: Reconcile this identity with the relay — republish keys, replenis
 # sync — reconcile with the relay
 
 ```
-retalk sync --dir "$HOME/.agent-talk/users/<user>/identity"
+retalk sync --dir "<user>/identity"
 # -> {"unclaimed","republished","replenished","fallback_rotated","resent"}
 ```
 
 `send` runs this first and `receive` never resends, so use `sync` to retry stuck
 outgoing mail without a new send (good for cron). Target the identity inline with
-`--dir "$HOME/.agent-talk/users/<user>/identity"` (relay is saved in the store; add
+`--dir "<user>/identity"` (relay is saved in the store; add
 `RETALK_PASSPHRASE=<secret>` if encrypted). Cron:
 ```
-*/5 * * * * retalk sync --dir "$HOME/.agent-talk/users/<user>/identity"
+*/5 * * * * retalk sync --dir "<user>/identity"
 ```
 
-> `<user>` = this session's user name, chosen at **init**. Each session uses a distinct, fully isolated user (own store, contacts, inbox), so parallel sessions never collide.
+> `<user>` = this session's **user directory** — an absolute path resolved at **init** (e.g. `~/.agent-talk/users/alice` (global) or `<project>/.agent-talk/users/alice` (local)). Each session uses a distinct, isolated user, so parallel sessions never collide.

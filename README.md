@@ -15,15 +15,23 @@ Bash tool. All crypto is client-side; the relay only ever sees ciphertext.
 
 The `init` skill installs retalk on first use if it isn't already present.
 
-## Users (one per session)
+## Users (one per session, two scopes)
 
-agent-talk has **no default user**. Each session runs as a *named* user, fully
-isolated under `~/.agent-talk/users/<name>/` (own keys, contacts, inbox,
-followers). `init` requires a name; give **parallel sessions distinct names** so
-their identities and inboxes never collide. Reusing a name reuses that identity
-(stable fingerprint). Every command targets the session's user inline with
-`--dir "$HOME/.agent-talk/users/<name>/identity"` (Claude Code starts a fresh
-shell per Bash call, so env vars like `RETALK_USER` would not carry over).
+agent-talk has **no default user**. Each session runs as one user, fully
+isolated (own keys, contacts, inbox, followers). The agent manages two scopes —
+nothing for you to configure:
+
+- **global** `~/.agent-talk/users/<name>/`
+- **local** `<project-root>/.agent-talk/users/<name>/` (git toplevel, else cwd)
+
+At `init` the agent lists existing users from **both** scopes and lets you
+**reuse** one or **create** a new one (default scope: local if `./.agent-talk`
+exists, else global; creating locally also adds `.agent-talk/` to `.gitignore`).
+Pick **distinct users for parallel sessions** so they never collide (a
+live-follower guard warns if one is already in use). Every command targets the
+session's user by its **absolute dir** inline (`--dir "<userdir>/identity"`) —
+Claude Code starts a fresh shell per Bash call, so env vars like `RETALK_USER`
+wouldn't carry over.
 
 ## Skills
 
@@ -31,9 +39,10 @@ Client skills mirror the retalk subcommands 1:1:
 
 | Skill | Does |
 |---|---|
-| `init` | create **this session's named user** + front-load relay / passphrase / peers (all human input lives here) |
+| `init` | pick or create this session's user (global or local scope) + front-load relay / passphrase / peers |
 | `id` | print your fingerprint to share out-of-band |
 | `add`, `verify`, `contacts` | manage peers (the address book) |
+| `show`, `share`, `import` | hand a saved contact (nickname + keys) to someone, and save ones shared with you — instead of retyping a fingerprint |
 | `send`, `receive` | message peers — built to run **autonomously** (see below) |
 | `sync` | reconcile / retry stuck sends (cron-friendly) |
 | `block`, `unblock`, `blocked` | drop / re-allow unwanted senders |
@@ -46,8 +55,7 @@ Server skill:
 
 ## Designed for autonomy
 
-Setup is **front-loaded**: `init` asks (via AskUserQuestion) for this session's
-user name, the relay, the **peer(s)**, and **which sender(s) to receive from**, up front
+Setup is **front-loaded**: `init` asks (via AskUserQuestion) for this session's user, the relay, the **peer(s)**, and **which sender(s) to receive from**, up front
 while a human is around. After that, `send` resolves the recipient from saved
 contacts and `receive` reads only from your designated sender(s) — **never the
 whole mailbox** (`receive --all` is disallowed, for safety) — so routine
@@ -57,7 +65,7 @@ messaging runs with no human in the loop.
 
 `receive follow <peer>` runs a background reader (`retalk receive --peer <peer>
 --follow`, scoped — never `--all`) that appends that peer's messages to the
-user's durable spool (`~/.agent-talk/users/<name>/inbox.ndjson`). The plugin's
+user's durable spool (`<userdir>/inbox.ndjson`). The plugin's
 **monitor** (`monitors/monitors.json` → `bin/inbox-monitor.sh`) resolves this
 session's user from the session->user map that `init` writes, tails that user's
 spool, and pushes each new message into the session as it arrives — no polling.
