@@ -19,7 +19,8 @@ def _wait(port, timeout=15):
     raise TimeoutError("relay did not start")
 
 
-@unittest.skipUnless(RETALK and RETALK_SERVER, "retalk/retalk-server not on PATH")
+@unittest.skipUnless(RETALK and RETALK_SERVER and os.environ.get("AGENT_TALK_E2E"),
+                     "relay round-trip: set AGENT_TALK_E2E=1 with retalk on PATH")
 class TestRoundTrip(unittest.TestCase):
     def _rk(self, *a):
         r = subprocess.run([RETALK, *a], capture_output=True, text=True)

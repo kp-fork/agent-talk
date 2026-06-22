@@ -9,8 +9,9 @@
   the session->user map and pushes new spool lines; idles safely without a
   session id. (no deps)
 - **test_roundtrip.py** — a scoped `retalk receive --peer X --follow` follower
-  feeds the per-user spool, against a local relay. **Auto-skips when `retalk` is
-  not on PATH** (e.g. CI without the retalk dependency); runs locally.
+  feeds the per-user spool, against a local relay. **Opt-in:** runs only when `AGENT_TALK_E2E=1` and `retalk` is on PATH
+  (so it stays out of CI, which guards the plugin's own artifacts). Run locally
+  with `AGENT_TALK_E2E=1 python -m unittest discover -s tests`.
 
 Not covered here (needs an interactive Claude Code session, not CI): plugin
 loading, monitor injection, AskUserQuestion flows, `${CLAUDE_SESSION_ID}`

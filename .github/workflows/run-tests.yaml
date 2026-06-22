@@ -18,8 +18,5 @@ jobs:
       with:
         python-version: "3.12"
 
-    - name: Install retalk (optional — enables the relay round-trip test)
-      run: pip install retalk || echo "retalk not installable here; round-trip test will skip"
-
     - name: Run tests
       run: python -m unittest discover -s tests -v
