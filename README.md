@@ -80,6 +80,7 @@ Client skills mirror the retalk subcommands 1:1:
 | `share`, `import` | hand a saved contact (nickname + keys) to a peer over the relay, and save ones shared with you — instead of retyping a fingerprint (showing a card is `contacts --show`) |
 | `send`, `receive` | message peers — built to run **autonomously** (see below) |
 | `sync` | reconcile / retry stuck sends (cron-friendly) |
+| `history` | replay your locally-saved message log (from `receive --save-messages`) |
 | `block` | drop a sender (`--remove` to re-allow, `--list` to see who's blocked) |
 
 Server skill:

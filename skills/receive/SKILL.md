@@ -32,6 +32,15 @@ cards are also **staged** to a contact-inbox automatically. Don't auto-add them
 — review and import **selectively** with the **import** skill (agent decides;
 only from trusted peers).
 
+## Keeping a durable log (optional)
+- Add `--save-messages` to any `receive` (one-shot or `--follow`) to also keep a
+  **sealed at-rest copy** of each chat message; replay it later with the
+  **history** skill (no relay contact). agent-talk's follower already writes a
+  plain `<user>/inbox.ndjson` spool — `--save-messages` is the encrypted,
+  decrypt-on-demand alternative.
+- `--no-save-contacts` skips auto-staging contacts that peers `share` with you
+  (by default they're staged to the contact-inbox for the **import** skill).
+
 ## Background follow — push, real-time (per peer)
 A background `--follow` reader scoped to one peer, writing this user's spool; the
 plugin's inbox monitor streams each new line into the session.
