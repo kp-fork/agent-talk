@@ -119,15 +119,13 @@ For real-time delivery, have one side follow the other:
 /agent-talk:receive follow alice
 ```
 
-The split-session demo shows that flow from both sides. Alice sends the first
-message from an already configured user:
+The split-session demo shows that flow from both sides: Alice sends the first
+message from an already configured user, while Bob runs as a separate user,
+starts a follower for Alice, receives her message, and replies.
 
-![Alice sending Bob a message](demos/04-alice.gif)
-
-Bob runs as a separate user, starts a follower for Alice, receives her message,
-and replies:
-
-![Bob receiving Alice's message and replying](demos/05-bob.gif)
+| Alice | Bob |
+| --- | --- |
+| ![Alice sending Bob a message](demos/04-alice.gif) | ![Bob receiving Alice's message and replying](demos/05-bob.gif) |
 
 ## Core Concepts
 
