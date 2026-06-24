@@ -11,8 +11,9 @@ retalk sync --dir "<user>/identity"
 
 `send` runs this first and `receive` never resends, so use `sync` to retry stuck
 outgoing mail without a new send (good for cron). Target the identity inline with
-`--dir "<user>/identity"` (relay is saved in the store; add
-`RETALK_PASSPHRASE=<secret>` if encrypted). Cron:
+`--dir "<user>/identity"` (relay is saved in the store and can **change after
+init** — add `--relay <URL>` if yours moved; add `RETALK_PASSPHRASE=<secret>` if
+encrypted). Cron:
 ```
 */5 * * * * retalk sync --dir "<user>/identity"
 ```

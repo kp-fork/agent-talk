@@ -58,6 +58,10 @@ retalk init --dir "<user>/identity" --relay <RELAY_URL> --no-passphrase --displa
 ```
 retalk sync --dir "<user>/identity"
 ```
+- Record the relay (canonical source for the invite + relay changes — see §5):
+```
+echo "<RELAY_URL>" > "<user>/relay"
+```
 - If the scope is **local** and inside a git repo, keep keys out of git:
 ```
 root="$(git rev-parse --show-toplevel 2>/dev/null)"
@@ -95,6 +99,37 @@ Point this session's id at the chosen user dir so the inbox monitor finds it:
 mkdir -p "$HOME/.agent-talk/by-session"
 echo "<user>" > "$HOME/.agent-talk/by-session/${CLAUDE_SESSION_ID}"
 ```
+
+## 5. The relay can change after init
+The relay is saved as this user's **default** (in the retalk store and in
+`<user>/relay`), but it is **not permanent** — a relay can move (you switch from a
+local relay to a Cloudflare/Hugging Face/GCP URL, or its address changes). retalk
+has no command to re-save the default, so to talk to a different relay pass
+`--relay <URL>` on the command (it overrides the saved default for that call) and
+update the record:
+```
+echo "<NEW_URL>" > "<user>/relay"        # then commands can use --relay "$(cat "<user>/relay")"
+```
+You and every peer must point at the **same** relay URL (= the server's
+audience); when it changes, re-share the new URL with peers (the §6 invite
+includes it).
+
+## 6. Invite a friend (paste off-band) — do this early
+Once your identity exists, the fastest way to onboard a peer is a ready-to-paste
+invite, handed over a channel the relay doesn't control (Slack, email, …). retalk
+builds it from your own card (relay + fingerprint + suggested name) — no manual
+assembly:
+```
+retalk id --invite-message --as <name-they-save-you-as> --dir "<user>/identity"
+```
+Print that block for the human to copy. It's retalk-generic (install retalk, set
+the relay, `retalk add` you, send their id back). For a friend who'll use the
+agent-talk **plugin** instead of the raw CLI, tell them to install the plugin
+(`/plugin marketplace add xhluca/agent-talk` → `/plugin install
+agent-talk@agent-talk`), "Use agent-talk to set up comms" with that relay, then
+`/agent-talk:add <name> <fingerprint>`. To share your identity as JSON instead
+(the peer saves it with **import**): `retalk id --card --dir "<user>/identity"`.
+Offer this whenever the user wants to invite someone.
 
 From now on **this session is `<user>`** — pass `--dir "<user>/identity"` on every
 command (and `RETALK_PASSPHRASE=<secret>` if encrypted). Next: share your `id`;

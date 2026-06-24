@@ -1,5 +1,5 @@
 ---
-description: Send an end-to-end-encrypted message to a peer, autonomously. Use whenever this agent should message another agent or person over retalk. Designed to run with no human supervision — it resolves the recipient from saved contacts; a routine send never stops to ask. (Recipient/relay are set up once by the init skill.)
+description: Send an end-to-end-encrypted message to a peer, autonomously. Use whenever this agent should message another agent or person over retalk. Designed to run with no human supervision — it resolves the recipient from saved contacts; a routine send never stops to ask — but it always shows the exact message it sends. (Recipient/relay are set up once by the init skill.)
 ---
 
 # send — message a peer (seamless, autonomous)
@@ -9,6 +9,11 @@ retalk send --peer <name-or-fingerprint> "your message" --dir "<user>/identity"
 # -> {"id","to"} on stdout
 ```
 
+**Always show what you send (default).** Surface the exact outgoing message and
+recipient verbatim — e.g. print `→ bob: <the exact text>` — so the human can see
+what went over the wire. This is *display*, not a confirmation prompt: it never
+blocks an autonomous send. (Only stay quiet if the human asked you to.)
+
 Run without interrupting the human in the normal case:
 - **Recipient** — resolve from saved contacts, don't ask:
   `retalk contacts --json --dir "<user>/identity"`. One contact → send
@@ -16,7 +21,9 @@ Run without interrupting the human in the normal case:
   front-loaded by **init**.
 - **Identity** — always targeted **inline** with
   `--dir "<user>/identity"` (env vars don't persist between commands);
-  the relay is saved in that store. Encrypted identity? prefix
+  the relay is saved in that store and defaults to the init relay (recorded in
+  `<user>/relay`). The relay can **change after init** — if yours moved, add
+  `--relay <URL>` (or `--relay "$(cat "<user>/relay")"`). Encrypted identity? prefix
   `RETALK_PASSPHRASE=<secret>`.
 
 Publishes keys + resends the outbox first; the peer reads it with **receive**.

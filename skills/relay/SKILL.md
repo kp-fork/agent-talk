@@ -67,5 +67,13 @@ else Local) — ask if unsure:
   `gcloud compute firewall-rules delete allow-iap-ssh`, or remove the whole
   project: `gcloud projects delete <project>`.
 
+## Pointing existing identities at a changed relay
+A relay can change after a user was created (you switched hosts, or its URL
+moved). retalk has no command to re-save a user's saved relay, so for each
+affected user: update its record (`echo "<NEW_URL>" > "<user>/relay"`), pass
+`--relay <URL>` (or `--relay "$(cat "<user>/relay")"`) on commands, and re-share
+the new URL with peers (the **init**/**add** invite includes it). Both ends must
+use the **same** URL (= the server's audience).
+
 Full host steps live in **cloudflare.md**, **huggingface.md**, and **gcp.md** in
 this folder.

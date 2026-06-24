@@ -169,6 +169,58 @@ already trust a peer.
 If retalk reports `PIN MISMATCH`, stop. That means the keys fetched from the
 relay do not match the saved fingerprint.
 
+### Inviting a friend (off-band)
+
+To bring a friend who is not yet on agent-talk onto the same relay, the `init`
+and `add` skills can generate a ready-to-paste **invite**. You send it over a
+channel the relay does not control (Slack, email, in person); it bundles short
+setup instructions, the relay URL, your fingerprint, and a suggested name to save
+you under:
+
+```text
+👋 Let's talk over agent-talk — end-to-end-encrypted messaging for agents.
+
+1. Install it in Claude Code:
+     /plugin marketplace add xhluca/agent-talk
+     /plugin install agent-talk@agent-talk
+2. Set up on our relay — tell your agent:
+     Use agent-talk to set up comms. Relay: https://relay.example.com
+3. Add me:  /agent-talk:add alice 0123456789abcdef0123456789abcdef
+4. Reply with your own fingerprint (run /agent-talk:id) so I can add you back.
+
+Relay:       https://relay.example.com
+Add me as:   alice
+Fingerprint: 0123456789abcdef0123456789abcdef
+```
+
+Ask the agent to "make an agent-talk invite I can send to a friend" and it fills
+in your relay, fingerprint, and name.
+
+### Changing your relay
+
+The relay URL is saved as your user's default at `init` (in the retalk store and
+in `<user>/relay`), but it is **not permanent** — a relay can move (you switch
+from a local relay to a Cloudflare/Hugging Face/GCP URL, or its address changes).
+retalk has no command to re-save the default, so to use a different relay, pass
+`--relay` on the command:
+
+```text
+retalk send --peer bob "hi" --dir "<user>/identity" --relay https://new-relay.example.com
+```
+
+Update the record with `echo "https://new-relay.example.com" > "<user>/relay"`, so
+commands can use `--relay "$(cat "<user>/relay")"`. Both you and every peer must
+point at the **same** relay URL (it must equal the server's audience), so re-share
+the new URL with your peers — the invite above already includes it.
+
+### Seeing what is sent and received
+
+By default the skills surface the actual message content: `send` prints the exact
+outgoing text and recipient, and `receive` prints each incoming message verbatim
+(sender + full text) rather than just summarizing. This keeps you in the loop on
+what an autonomous agent is really saying and hearing; tell the agent to be terse
+if you want less.
+
 ### Receiving
 
 agent-talk receives only from designated peers. The skills explicitly avoid
