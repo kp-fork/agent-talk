@@ -34,17 +34,23 @@ Set `<user>` to its absolute dir. Skip creation — its relay/peers/receive-from
 are already saved. Run the guard (step 3) and the session map (step 4).
 
 ### Create a new user
-- Ask the **name** and **scope** (default **local** if `./.agent-talk` already
-  exists, else **global**); `<user>` = `<scope>/users/<name>`.
-- **On-disk name clash** (that dir exists): reuse it instead, or pick a free name
-  (e.g. `<name>-2`).
+- Ask the **name** — **always ask; never assume** a name like `alice`/`bob`.
+  Suggest a **unique** name in case several users share this device:
+  `<you>-<device>-<n>`, e.g. `sam-macbook-1`. Then ask the **scope** (default
+  **local** if `./.agent-talk` already exists, else **global**); `<user>` =
+  `<scope>/users/<name>`.
+- **On-disk name clash** (that dir exists): reuse it instead, or bump the suffix
+  (e.g. `sam-macbook-2`).
 - Ask the **relay URL** — everyone who talks to each other must share ONE relay
-  (it equals that server's audience). Pick the case that fits, most common first:
+  (it must exactly equal that server's audience, scheme included, **no trailing
+  slash**). Pick the case that fits, most common first:
     - **Joining people who already use agent-talk:** paste the relay URL they
       gave you (it's in their invite). You do NOT stand up your own.
-    - **A shared/team relay exists:** paste that URL.
-    - **You're the first / have none:** create one with the `relay` skill, then
-      use its URL here.
+    - **No relay in mind?** Default to the shared public relay
+      **`https://retalk-relay.mcgill-nlp.org`** (recommended) — the quickest way
+      to get talking; anyone else on it can reach you.
+    - **A different shared/team relay exists:** paste that URL.
+    - **You want your own:** create one with the `relay` skill, then use its URL.
   Then ask the **passphrase** (no-passphrase recommended; else prefix later
   commands with `RETALK_PASSPHRASE=<secret>`).
 - Create the identity:
