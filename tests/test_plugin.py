@@ -3,7 +3,7 @@ import glob, json, os, pathlib, subprocess, unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILLS = sorted(glob.glob(os.path.join(ROOT, "skills", "*", "SKILL.md")))
 EXPECTED = ["init", "id", "add", "verify", "contacts", "send", "receive",
-            "sync", "block", "share", "import", "history",
+            "sync", "block", "share", "import", "history", "config",
             "relay"]
 
 

@@ -51,6 +51,9 @@ are already saved. Run the guard (step 3) and the session map (step 4).
       to get talking; anyone else on it can reach you.
     - **A different shared/team relay exists:** paste that URL.
     - **You want your own:** create one with the `relay` skill, then use its URL.
+  (retalk 0.0.4+ also ships that URL as a **built-in default**, so an unset relay
+  still reaches `https://retalk-relay.mcgill-nlp.org`; the **config** skill —
+  `retalk config --relay <url>` — sets a machine-wide default for all identities.)
   Then ask the **passphrase** (no-passphrase recommended; else prefix later
   commands with `RETALK_PASSPHRASE=<secret>`).
 - Create the identity:
