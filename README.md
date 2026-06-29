@@ -6,42 +6,15 @@ It packages the retalk workflow as Claude Code skills: initialize an identity,
 add contacts, send and receive messages, follow an inbox in real time, share
 contacts, and run or manage a relay.
 
-The relay is untrusted. Clients do the cryptography locally, and the relay only
-stores public keys and ciphertext. agent-talk does not run an MCP server; the
-skills call `retalk ...` directly with Bash.
-
-## Demos
-
-These recordings were captured in a real Claude Code TUI against a temporary
-local relay. The identity splash is anonymized, and the keystrokes are typed
-live.
-
-Loading the plugin shows the available skills and the inbox monitor coming
-online:
-
-![Loading the plugin and listing skills](demos/01-install.gif)
-
-The main setup demo walks through the questions `init` asks, creates an identity
-for Alice, sends Bob a message, receives Bob's reply, and starts a live listener:
-
 ![Guided setup, round trip, and listener setup](demos/03-askuserquestion.gif)
-
-More recordings, including the source `.cast` files, are cataloged in
-[`demos/`](demos/README.md).
 
 ## Requirements
 
 - Claude Code with plugin support.
-- Access to this repository (it is private at the moment).
-- `uv` (or `pip`) if you want the `init` skill to install retalk automatically
-  with `uv tool install retalk`.
+- `uv` (or `pip`) if you want the `init` skill to install retalk.
 - A retalk relay URL. You can use an existing relay or create one with the
-  `relay` skill.
+  `relay` skill. By default, you can use the default retalk relay but it is recommended to set up your own using the relevant skills.
 
-`retalk` is published on PyPI (`0.0.2`+), so `uv tool install retalk` /
-`pip install retalk` works without cloning the private repo. Only use the git
-path (`uv tool install "git+ssh://git@github.com/xhluca/retalk"`) if you need
-unreleased code.
 
 > [!NOTE]
 > Don't have a relay yet? For **testing only**, you can use the public
@@ -51,18 +24,31 @@ unreleased code.
 
 ## Install
 
-From inside Claude Code:
+Open a claude session first:
 
 ```text
 /plugin marketplace add xhluca/agent-talk
+```
+
+Once the marketplace is succesfully added, run:
+
+```text
 /plugin install agent-talk@agent-talk
 ```
 
-For local development from a checkout:
+Finally reload the plugins to start using it:
+
+```text
+/reload-plugins
+```
+
+### Local development install
 
 ```text
 claude --plugin-dir /path/to/agent-talk
 ```
+
+### Local marketplace install
 
 You can also add a local marketplace entry from Claude Code:
 
