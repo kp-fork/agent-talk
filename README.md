@@ -42,6 +42,17 @@ Finally reload the plugins to start using it:
 /reload-plugins
 ```
 
+Two recommendations when installing:
+
+- **Project scope** — when the install prompts for a scope (or via `/plugin`),
+  prefer **project** over global: the plugin (and the per-project identities the
+  `init` skill creates) stay scoped to the repo you're using it in, so different
+  projects don't share users.
+- **Auto mode** — agent-talk is designed to send/receive autonomously; run the
+  session in **auto** permission mode (Shift+Tab to switch, or set
+  `"permissions": {"defaultMode": "auto"}` in your settings) so routine
+  send/receive commands don't stop at permission prompts.
+
 <details>
 <summary><b>Local development install</b></summary>
 
@@ -246,7 +257,12 @@ sessions; the spool remains the durable source of truth.
 Use `receive --save-messages` if you also want retalk's sealed message history,
 which can be replayed later with `history`.
 
-## Chat pane
+<details>
+<summary><b>Chat pane (at-chat) — outdated, kept for reference</b></summary>
+
+> **Note:** this UI layer predates the current skills (which now render the
+> conversation as a transcript in the session itself) and hasn't been kept up to
+> date with recent releases.
 
 [`at-chat/`](at-chat/) is an optional UI layer: a colorful, Slack-style
 transcript of an identity's conversations in a tmux split, with per-sender
@@ -269,6 +285,8 @@ at-chat/stop.sh                  # close the pane (--reader also stops the follo
 
 `start.sh` is idempotent, so it is safe to run at the start of every session.
 See [`at-chat/README.md`](at-chat/README.md) for the full reference.
+
+</details>
 
 ## Skills
 
