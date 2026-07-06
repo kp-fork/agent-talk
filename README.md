@@ -42,19 +42,25 @@ Finally reload the plugins to start using it:
 /reload-plugins
 ```
 
-### Local development install
+<details>
+<summary><b>Local development install</b></summary>
 
 ```text
 claude --plugin-dir /path/to/agent-talk
 ```
 
-### Local marketplace install
+</details>
+
+<details>
+<summary><b>Local marketplace install</b></summary>
 
 You can also add a local marketplace entry from Claude Code:
 
 ```text
 /plugin marketplace add ./agent-talk
 ```
+
+</details>
 
 ## Quick Start
 
