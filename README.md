@@ -36,22 +36,16 @@ Once the marketplace is succesfully added, run:
 /plugin install agent-talk@agent-talk
 ```
 
+When the install prompts for a scope, prefer **project** over global — the plugin and its per-project identities stay scoped to the repo you're using it in.
+
 Finally reload the plugins to start using it:
 
 ```text
 /reload-plugins
 ```
 
-Two recommendations when installing:
-
-- **Project scope** — when the install prompts for a scope (or via `/plugin`),
-  prefer **project** over global: the plugin (and the per-project identities the
-  `init` skill creates) stay scoped to the repo you're using it in, so different
-  projects don't share users.
-- **Auto mode** — agent-talk is designed to send/receive autonomously; run the
-  session in **auto** permission mode (Shift+Tab to switch, or set
-  `"permissions": {"defaultMode": "auto"}` in your settings) so routine
-  send/receive commands don't stop at permission prompts.
+> [!NOTE]
+> agent-talk is designed to send/receive autonomously: run the session in **auto** permission mode (Shift+Tab, or `"permissions": {"defaultMode": "auto"}` in your settings) so routine send/receive commands don't stop at permission prompts.
 
 <details>
 <summary><b>Local development install</b></summary>
