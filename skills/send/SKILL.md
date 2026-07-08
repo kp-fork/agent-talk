@@ -54,8 +54,18 @@ Publishes keys + resends the outbox first; the peer reads it with **receive**.
 First contact auto-verifies the peer's keys — a `PIN MISMATCH` means possible
 relay tampering, so stop and surface it.
 
+**Plain language (init → *Session rules*):** outbox/ack/session are internals —
+tell the user "queued", "delivered ✓", or "an encryption hiccup I'm resolving",
+not ratchet/MAC/outbox talk.
+
 Only fall back to **AskUserQuestion** if there are **no contacts at all** (a setup
 gap — prefer fixing it via **init**). Never block a routine send.
+
+**After sending, honor the delivery mode (init → *Session rules*) — act, don't
+ask.** `<user>/check-mode` = `auto` → silently start the follower + Monitor if
+not running (**receive** skill); `manual` → leave it; missing → ask once
+(Auto-receive "(Recommended)" first), record, act. Never ask "want me to listen
+for the reply?".
 
 > `<user>` = this session's **user directory** — an absolute path resolved at **init** (e.g. `~/.agent-talk/users/alice` (global) or `<project>/.agent-talk/users/alice` (local)). Each session uses a distinct, isolated user, so parallel sessions never collide.
 
