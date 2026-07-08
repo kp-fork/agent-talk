@@ -51,16 +51,17 @@ Finally reload the plugins to start using it:
 
 `/plugin install` does **not** upgrade an existing install (it reports "already
 installed"), and even a fresh install pulls from your local marketplace clone,
-which may be stale. To get the latest release:
+which may be stale. To get the latest release, in a Claude Code session:
 
-```bash
-claude plugin update agent-talk@agent-talk                  # user-scope install
-claude plugin update agent-talk@agent-talk --scope project  # project-scope install
+```text
+/plugin update agent-talk@agent-talk
 ```
 
-(or `/plugin` → manage plugins → agent-talk → update). Then restart the session
-(or `/reload-plugins`) to apply. Update whenever a new release lands — sessions
-keep using the old skills until you do.
+(add `--scope project` for a project-scope install; the same works from a
+terminal as `claude plugin update agent-talk@agent-talk`, or via `/plugin` →
+manage plugins). Then restart the session (or `/reload-plugins`) to apply.
+Update whenever a new release lands — sessions keep using the old skills until
+you do.
 
 <details>
 <summary><b>Local development install</b></summary>
