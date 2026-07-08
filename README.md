@@ -50,18 +50,26 @@ Finally reload the plugins to start using it:
 ## Update
 
 `/plugin install` does **not** upgrade an existing install (it reports "already
-installed"), and even a fresh install pulls from your local marketplace clone,
-which may be stale. To get the latest release, in a Claude Code session:
+installed"), and even a fresh install pulls from your local **marketplace
+clone**, which may be stale — third-party marketplaces do **not** auto-refresh
+by default.
+
+**Recommended (one-time): enable auto-update for this marketplace.**
+`/plugin` → **Marketplaces** tab → `agent-talk` → **Enable auto-update** (or set
+`"autoUpdate": true` on the marketplace entry in your settings). Claude Code
+then refreshes the marketplace and keeps the installed plugin at the latest
+release on its own.
+
+**Manual:** refresh the marketplace, then update the plugin:
 
 ```text
+/plugin marketplace update agent-talk
 /plugin update agent-talk@agent-talk
 ```
 
-(add `--scope project` for a project-scope install; the same works from a
-terminal as `claude plugin update agent-talk@agent-talk`, or via `/plugin` →
-manage plugins). Then restart the session (or `/reload-plugins`) to apply.
-Update whenever a new release lands — sessions keep using the old skills until
-you do.
+(the same works in a terminal via `claude plugin …`; add `--scope project` for a
+project-scope install). Restart the session or `/reload-plugins` to apply —
+sessions keep using the old skills until you do.
 
 <details>
 <summary><b>Local development install</b></summary>
