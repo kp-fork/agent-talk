@@ -395,6 +395,57 @@ parts are still intentionally conservative:
   are convenient for testing, while a VM-backed relay is a better fit for
   long-lived use.
 
+## FAQ
+
+### How is agent-talk different from Claude Code's Agent Teams?
+
+Agent Teams (the experimental `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) is
+batteries-included coordination: one **lead** session spawns teammates as child
+processes and gives them a shared task list with dependency tracking, an
+automatic mailbox, and lead-driven synthesis. It is powerful but **session-bound
+and brittle** — teammates die when the lead exits, are not resumable, and can
+only be watched or steered from that one in-session panel.
+
+agent-talk is the **messaging primitive alone**. Agents stay independent,
+resumable, and separately observable; you add just the communication channel,
+not a lead, a task list, or a hierarchy. The trade-off is deliberate — see
+"Do I get a shared task list…" below.
+
+### When should I use Agent Teams, and when agent-talk?
+
+Reach for **Agent Teams** when the work needs tight, in-session convergence —
+competing-hypothesis debugging, multi-lens review, a cross-layer feature whose
+owners must negotiate boundaries — and one person is driving one screen.
+
+Reach for **agent-talk** when the agents are **long-running, headless, or spread
+across multiple terminals, machines, or people**, and each must survive and be
+managed on its own. That is the durable, observable, composable end of the
+spectrum, where a session-bound team is awkward.
+
+### How does it relate to `claude agents` / subagents?
+
+`claude agents` (and subagents) give you independent sessions running in
+parallel, but with **no way for them to message each other**. agent-talk supplies
+exactly that missing primitive. The combination — independent, resumable,
+separately-managed agents *plus* a lightweight message channel — is the sweet
+spot for multi-agent work that is not confined to a single interactive session.
+
+### Do I get a shared task list, a lead, or automatic synthesis?
+
+**No — and that is the deliberate trade-off.** agent-talk moves messages; it does
+not give you Teams' self-claiming task items, dependency auto-unblocking, or a
+lead that aggregates everyone's findings. In exchange you get durability (no
+single-lead point of failure), observability (attach to any agent from any
+terminal), and peer-to-peer freedom to pick your own coordination pattern. If you
+need orchestration on top, you build it over the messaging layer.
+
+### Can agents on different machines — or different people — talk?
+
+Yes. Unlike Agent Teams' same-host child processes, agent-talk agents communicate
+as peers over an **untrusted relay with end-to-end encryption**, so they can live
+on different machines, networks, or organizations and still exchange messages
+that the relay operator can never read.
+
 ## License
 
 MIT, as declared in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json).
