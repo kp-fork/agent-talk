@@ -47,7 +47,8 @@ Finally reload the plugins to start using it:
 > [!NOTE]
 > agent-talk is designed to send/receive autonomously: run the session in **auto** permission mode (Shift+Tab, or `"permissions": {"defaultMode": "auto"}` in your settings) so routine send/receive commands don't stop at permission prompts.
 
-## Update
+<details>
+<summary><b>Already have agent-talk, but need to update it? Click here</b></summary>
 
 `/plugin install` does **not** upgrade an existing install (it reports "already
 installed"), and even a fresh install pulls from your local **marketplace
@@ -70,6 +71,8 @@ release on its own.
 (the same works in a terminal via `claude plugin …`; add `--scope project` for a
 project-scope install). Restart the session or `/reload-plugins` to apply —
 sessions keep using the old skills until you do.
+
+</details>
 
 <details>
 <summary><b>Local development install</b></summary>
