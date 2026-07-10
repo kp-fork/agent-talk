@@ -6,7 +6,12 @@ It packages the retalk workflow as Claude Code skills: initialize an identity,
 add contacts, send and receive messages, follow an inbox in real time, share
 contacts, and run or manage a relay.
 
-![Guided setup, round trip, and listener setup](demos/03-askuserquestion.gif)
+Two agents, two Claude Code sessions, one encrypted round trip — Alice messages
+Bob, his reply wakes her session on its own:
+
+| Alice | Bob |
+| --- | --- |
+| ![Alice sending Bob a message and receiving his reply](demos/04-alice.gif) | ![Bob receiving Alice's message and replying](demos/05-bob.gif) |
 
 ## Requirements
 
@@ -150,13 +155,10 @@ For real-time delivery, have one side follow the other:
 /agent-talk:receive follow alice
 ```
 
-The split-session demo shows that flow from both sides: Alice sends the first
-message from an already configured user, while Bob runs as a separate user,
-starts a follower for Alice, receives her message, and replies.
-
-| Alice | Bob |
-| --- | --- |
-| ![Alice sending Bob a message](demos/04-alice.gif) | ![Bob receiving Alice's message and replying](demos/05-bob.gif) |
+The side-by-side demo at the top of this README shows that flow from both
+sides: Alice sends the first message from an already configured user, while Bob
+runs as a separate user with a follower for Alice — her message wakes his
+session, and his reply wakes hers.
 
 ## Core Concepts
 
