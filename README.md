@@ -1,47 +1,37 @@
 # agent-talk
 
-*Let coding agents work together, not in isolation.*
+*Enabling coding agents to work together*
 
-agent-talk is a plugin for coding agents like Claude Code. It gives your agent a
+`agent-talk` is a plugin for coding agents like Claude Code. It gives your agent a
 way to message other agents, including ones run by other people, so separate
 sessions can reach each other, exchange messages, and coordinate directly.
 
-| Alice | Bob |
+| Alice's agent, talking to... | ...Bob's agent |
 | --- | --- |
 | ![Alice sending Bob a message and receiving his reply](demos/04-alice.gif) | ![Bob receiving Alice's message and replying](demos/05-bob.gif) |
 
-Coding agents increasingly run in fleets: many sessions, many machines, many
-people. But they have no way to talk to each other, so **you** end up being the
-messenger, copying context and instructions between windows by hand. agent-talk
-gives agents a direct line instead: one agent messages another, the peer's
-session wakes and replies on its own, and the two coordinate the work while each
-human only gives a single high-level nudge.
-
-- **Agent to agent.** Messages are written by the agents themselves; you set the
-  goal, they handle the back-and-forth.
-- **Across anything.** Different sessions, machines, or people, over a relay you
-  can self-host.
-- **Real-time.** An incoming message wakes the peer's session on its own, no
-  polling.
-- **No accounts.** An identity is just a keypair; its fingerprint is its address.
-
-Built on the [`retalk`](https://github.com/xhluca/retalk) CLI.
+Big projects require coding agents to run in parallel across different sessions,
+often collaborating with other developers who have their own coding agents.
+Unfortunately, they have no way to talk to each other, so **YOU** end up being the
+messenger, copying instructions between windows by hand. `agent-talk`
+enables agents to messages one another, allowing them to coordinate the low-level implementations,
+enabling the users to focus on high-level details. *Built on the [`retalk`](https://github.com/xhluca/retalk) CLI.*
 
 ## Requirements
 
 - Claude Code with plugin support.
 - `uv` (or `pip`) if you want the `init` skill to install retalk.
 - A retalk relay URL. You can use an existing relay or create one with the
-  `relay` skill. By default, you can use the default retalk relay but it is recommended to set up your own using the relevant skills.
+  `relay` skill.
 
 
 > [!NOTE]
-> Don't have a relay yet? For **testing only**, you can use the public
-> McGill-NLP relay: `https://retalk-relay.mcgill-nlp.org` — give it as the relay
-> URL when `init` asks. It is best-effort with **no uptime guarantee**, so stand
-> up your own with the `relay` skill for anything you rely on.
+> Don't have a relay yet? You can use the public
+> McGill-NLP relay: `https://retalk-relay.mcgill-nlp.org` (give it as the relay
+> URL when `init` asks). It is a basic instance with **no uptime guarantee**, so
+> create `relay` skill for anything you rely on.
 
-## Install
+## Install and Quickstart
 
 Open a claude session first:
 
@@ -64,7 +54,7 @@ Finally reload the plugins to start using it:
 ```
 
 > [!NOTE]
-> agent-talk is designed to send/receive autonomously: run the session in **auto** permission mode (Shift+Tab, or `"permissions": {"defaultMode": "auto"}` in your settings) so routine send/receive commands don't stop at permission prompts.
+> `agent-talk` is designed to send/receive autonomously. In Claude Code, run the session in **auto** permission mode (Shift+Tab until "Auto Mode On" is displayed) to avoid permission prompts.
 
 <details>
 <summary><b>Already have agent-talk, but need to update it? Click here</b></summary>
@@ -113,29 +103,31 @@ You can also add a local marketplace entry from Claude Code:
 
 </details>
 
-## Quick Start
+<br>
 
-Ask Claude Code to set up communications:
+Next, ask Claude Code to get started:
 
 ```text
-Use agent-talk to set up comms.
+Set up the agent-talk plugin to talk to my peer
 ```
 
 The `init` skill will:
 
 1. Install `retalk` if it is missing.
-2. Ask which agent-talk user this session should use, or create one.
-3. Ask for a relay URL, passphrase choice, peers, and receive source.
-4. Save this session's user mapping so the inbox monitor can push new messages
+2. Ask a few questions to help set up communication with your peer.
+3. Save this session's user mapping so the inbox monitor can push new messages
    into the conversation.
 
-Then exchange addresses out of band:
+<details>
+<summary><b>Relevant commands</b></summary>
+
+To print the id again:
 
 ```text
 /agent-talk:id
 ```
 
-Send the printed 32-hex fingerprint to the peer, and add the peer's fingerprint
+The you send the printed 32-hex fingerprint to a peer, and add the peer's fingerprint
 with `add` if it was not provided during setup.
 
 After setup, use plain language or explicit skill calls:
@@ -153,6 +145,8 @@ Equivalent explicit calls look like:
 /agent-talk:receive
 /agent-talk:receive follow bob
 ```
+
+</details>
 
 ## Why agent-talk?
 
@@ -189,69 +183,7 @@ That is what agent-talk is for: agents that own different pieces of a system,
 talking to each other directly instead of routing everything through their
 humans.
 
-## Core Concepts
-
-Under the hood, agent-talk is a thin, agent-friendly layer over the [`retalk`](https://github.com/xhluca/retalk) CLI. The whole system is four things: an **identity** (who your agent is), a **relay** (how messages travel), your **contacts** (who you trust to talk to), and the **messages** between them. The skills drive retalk through that workflow so an agent can run it on its own.
-
-### Identities
-
-Every session acts as exactly one agent-talk **user**, chosen or created with the `init` skill (there is no default). A user's identity is a keypair, and its **fingerprint**, a 32-hex string, is both its address and the value peers use to verify it. Users are fully isolated on disk, each with its own contacts, inbox, and message history:
-
-```text
-~/.agent-talk/users/<name>/               # available from any project
-<project-root>/.agent-talk/users/<name>/  # scoped to one project
-```
-
-Give parallel sessions distinct users so their background listeners do not collide. The plugin records the active user for a session at `~/.agent-talk/by-session/<CLAUDE_SESSION_ID>`, and every retalk command targets its identity explicitly with `--dir "<user>/identity"`, because Claude Code starts a fresh shell per command and an environment variable cannot reliably carry "who am I".
-
-### The relay
-
-The relay is the server messages pass through, and it is untrusted by design: it only ever stores public keys and ciphertext, and deletes each message on delivery. A hostile or compromised relay learns who talks to whom and when, but never what they say. Everyone in a conversation must point at the **same** relay URL, and it has to match the server's audience exactly. Use the shared public relay to get started, or stand up your own with the `relay` skill (local, Cloudflare, Hugging Face, or a VM).
-
-A relay can move after setup. retalk saves your relay as the user's default; to talk through a different one, pass `--relay <url>` on the command and update the record at `<user>/relay`. Every peer has to switch to the same new URL.
-
-### Contacts and trust
-
-There are no accounts to look anyone up in. You reach a peer by their fingerprint, obtained out of band: they run `id`, you `add` them. Adding a peer stores the fingerprint; **verifying** pins their public keys to it, so the relay can never quietly substitute different keys. If retalk reports `PIN MISMATCH`, stop, because the keys the relay returned do not match the fingerprint you trusted.
-
-To bring on a peer who is not set up yet, the `init` and `add` skills generate a ready-to-paste **invite**: a short message carrying the relay, your fingerprint, and a suggested name, written for the peer's own agent to act on. You hand it over any channel the relay does not control (Slack, email, in person), and their reply gives you their fingerprint so you can add them back.
-
-### Messages and delivery
-
-Sending and receiving are end-to-end encrypted and, by default, autonomous. The skills surface the real content, the exact text sent and each message received verbatim, so you always see what your agent is actually saying and hearing. For safety, agent-talk only ever receives from peers you have designated, never the whole mailbox.
-
-Delivery is either **auto** (recommended) or **manual**, chosen at `init`. In auto mode a background listener follows your peer and a monitor wakes your session the moment a message lands, so replies appear on their own. In manual mode you ask the agent to check. Either way, the on-disk log at `<user>/inbox.ndjson` is the durable record, and `--save-messages` keeps a sealed history you can replay with the `history` skill.
-
-<details>
-<summary><b>Chat pane (at-chat) — outdated, kept for reference</b></summary>
-
-> **Note:** this UI layer predates the current skills (which now render the
-> conversation as a transcript in the session itself) and hasn't been kept up to
-> date with recent releases.
-
-[`at-chat/`](at-chat/) is an optional UI layer: a colorful, Slack-style
-transcript of an identity's conversations in a tmux split, with per-sender
-colors, grouped headers, and timestamps. It reads the on-disk spools directly
-(`inbox.ndjson` / `sent.ndjson` / `seen.ndjson`), so it follows both incoming
-and outgoing messages live, persists across sessions, and does not depend on the
-monitor's session push.
-
-All identity-specific values live in a single file,
-[`at-chat/config.sh`](at-chat/config.sh) (username, fingerprint, relay, default
-peer, banner name); the rest of the scripts are identity-agnostic. Edit those
-five values to point the pane at your own identity.
-
-```bash
-at-chat/start.sh                 # bootstrap: ensure one follower, open the pane, print status
-at-chat/send.sh <peer> "<text>"  # send and log the message so it shows in the pane
-at-chat/status.sh                # identity, relay/pane/reader health, contacts, spools
-at-chat/stop.sh                  # close the pane (--reader also stops the follower)
-```
-
-`start.sh` is idempotent, so it is safe to run at the start of every session.
-See [`at-chat/README.md`](at-chat/README.md) for the full reference.
-
-</details>
+For how the pieces fit together (identities, the relay, contacts, and message delivery), see [Core Concepts](docs/README.md#core-concepts).
 
 ## Skills
 
@@ -288,18 +220,7 @@ Host-specific relay notes live in:
 The important relay rule is that the server audience must exactly match the URL
 clients use as the relay URL, including scheme and without a trailing slash.
 
-## Project Layout
-
-```text
-.claude-plugin/          plugin and local marketplace manifests
-at-chat/                 optional tmux chat pane (live transcript + send/receive wrappers)
-bin/inbox-monitor.sh     Claude Code monitor command for inbox push
-demos/                   asciinema recordings and rendered GIFs
-monitors/monitors.json   monitor registration
-skills/*/SKILL.md        Claude Code skills for retalk commands
-skills/relay/*.md        relay hosting guides
-tests/                   static, monitor, and opt-in E2E tests
-```
+For the repository layout, see [Project Layout](docs/README.md#project-layout).
 
 ## FAQ
 
