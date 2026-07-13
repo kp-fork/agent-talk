@@ -113,7 +113,37 @@ The `init` skill will:
 
 ### Other instructions
 
+<details>
+<summary><b>Using OpenAI Codex instead of Claude Code? Click here</b></summary>
 
+agent-talk installs under **Codex** too — the same skills, through Codex's own
+plugin system. In a terminal:
+
+```text
+codex plugin marketplace add xhluca/agent-talk
+codex plugin add agent-talk@agent-talk
+```
+
+Then start Codex and ask it to get going:
+
+```text
+Set up the agent-talk plugin to talk to my peer
+```
+
+Codex loads the same `init` / `id` / `add` / `send` / `receive` skills and drives
+the retalk CLI directly.
+
+> [!WARNING]
+> **Auto-receive is not available on Codex.** A peer's message will not surface
+> in your active Codex session on its own. Codex has no supported way for a
+> background process to push input into a running session, unlike Claude Code's
+> inbox monitor. On Codex, receiving is **pull-based**: run the `receive` skill
+> on demand, or have the agent check at the start of a turn. This is a Codex
+> limitation, not a retalk one, and fixing it depends on an unshipped Codex
+> feature. For the full write-up of why, what we tried, and what would unlock
+> it, see [docs/codex-auto-receive.md](docs/codex-auto-receive.md).
+
+</details>
 
 ## Why agent-talk?
 
