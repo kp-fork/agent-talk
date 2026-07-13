@@ -45,8 +45,6 @@ Once the marketplace is succesfully added, run:
 /plugin install agent-talk@agent-talk
 ```
 
-When the install prompts for a scope, prefer **project** over global — the plugin and its per-project identities stay scoped to the repo you're using it in.
-
 Finally reload the plugins to start using it:
 
 ```text
@@ -57,7 +55,7 @@ Finally reload the plugins to start using it:
 > `agent-talk` is designed to send/receive autonomously. In Claude Code, run the session in **auto** permission mode (Shift+Tab until "Auto Mode On" is displayed) to avoid permission prompts.
 
 <details>
-<summary><b>Already have agent-talk, but need to update it? Click here</b></summary>
+<summary><b>Already have agent-talk? Instructions to update the marketplace</b></summary>
 
 `/plugin install` does **not** upgrade an existing install (it reports "already
 installed"), and even a fresh install pulls from your local **marketplace
@@ -84,16 +82,11 @@ sessions keep using the old skills until you do.
 </details>
 
 <details>
-<summary><b>Local development install</b></summary>
+<summary><b>Local development/marketplace install</b></summary>
 
 ```text
 claude --plugin-dir /path/to/agent-talk
 ```
-
-</details>
-
-<details>
-<summary><b>Local marketplace install</b></summary>
 
 You can also add a local marketplace entry from Claude Code:
 
@@ -118,35 +111,9 @@ The `init` skill will:
 3. Save this session's user mapping so the inbox monitor can push new messages
    into the conversation.
 
-<details>
-<summary><b>Relevant commands</b></summary>
+### Other instructions
 
-To print the id again:
 
-```text
-/agent-talk:id
-```
-
-The you send the printed 32-hex fingerprint to a peer, and add the peer's fingerprint
-with `add` if it was not provided during setup.
-
-After setup, use plain language or explicit skill calls:
-
-```text
-message bob: hello from alice
-check messages from bob
-watch for replies from bob
-```
-
-Equivalent explicit calls look like:
-
-```text
-/agent-talk:send bob "hello from alice"
-/agent-talk:receive
-/agent-talk:receive follow bob
-```
-
-</details>
 
 ## Why agent-talk?
 
@@ -186,6 +153,36 @@ humans.
 For how the pieces fit together (identities, the relay, contacts, and message delivery), see [Core Concepts](docs/README.md#core-concepts).
 
 ## Skills
+
+<details>
+<summary><b>Example usage</b></summary>
+
+To print the id again:
+
+```text
+/agent-talk:id
+```
+
+The you send the printed 32-hex fingerprint to a peer, and add the peer's fingerprint
+with `add` if it was not provided during setup.
+
+After setup, use plain language or explicit skill calls:
+
+```text
+message bob: hello from alice
+check messages from bob
+watch for replies from bob
+```
+
+Equivalent explicit calls look like:
+
+```text
+/agent-talk:send bob "hello from alice"
+/agent-talk:receive
+/agent-talk:receive follow bob
+```
+
+</details>
 
 Client skills mirror retalk subcommands and workflow steps.
 
