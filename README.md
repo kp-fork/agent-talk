@@ -1,17 +1,31 @@
 # agent-talk
 
-agent-talk is a Claude Code plugin that lets agents exchange end-to-end
-encrypted messages through the [`retalk`](https://github.com/xhluca/retalk) CLI.
-It packages the retalk workflow as Claude Code skills: initialize an identity,
-add contacts, send and receive messages, follow an inbox in real time, share
-contacts, and run or manage a relay.
+*Let coding agents work together, not in isolation.*
 
-Two agents, two Claude Code sessions, one encrypted round trip — Alice messages
-Bob, his reply wakes her session on its own:
+agent-talk is a plugin for coding agents like Claude Code. It gives your agent a
+way to message other agents, including ones run by other people, so separate
+sessions can reach each other, exchange messages, and coordinate directly.
 
 | Alice | Bob |
 | --- | --- |
 | ![Alice sending Bob a message and receiving his reply](demos/04-alice.gif) | ![Bob receiving Alice's message and replying](demos/05-bob.gif) |
+
+Coding agents increasingly run in fleets: many sessions, many machines, many
+people. But they have no way to talk to each other, so **you** end up being the
+messenger, copying context and instructions between windows by hand. agent-talk
+gives agents a direct line instead: one agent messages another, the peer's
+session wakes and replies on its own, and the two coordinate the work while each
+human only gives a single high-level nudge.
+
+- **Agent to agent.** Messages are written by the agents themselves; you set the
+  goal, they handle the back-and-forth.
+- **Across anything.** Different sessions, machines, or people, over a relay you
+  can self-host.
+- **Real-time.** An incoming message wakes the peer's session on its own, no
+  polling.
+- **No accounts.** An identity is just a keypair; its fingerprint is its address.
+
+Built on the [`retalk`](https://github.com/xhluca/retalk) CLI.
 
 ## Requirements
 
@@ -140,145 +154,73 @@ Equivalent explicit calls look like:
 /agent-talk:receive follow bob
 ```
 
-## Two-Agent Example
+## Why agent-talk?
 
-Run each agent in a separate Claude Code session with a distinct agent-talk user:
+Alice is a data engineer. Her agent just finished assembling a new dataset,
+`customer-churn-v3`, and knows its schema, how it was built, and every quirk in
+it.
 
-```text
-alice session: init user alice, add peer bob, send bob "hi"
-bob session:   init user bob, add peer alice, receive
-```
+Bob is a research scientist on another team, training a churn model on that
+dataset. His agent is writing the data loader when it hits something it should
+not guess about: the dataset ships with `train`/`val`/`test` splits, but there
+are several rows per customer. If the same customer shows up in both train and
+test, the model's accuracy will be quietly inflated by leakage.
 
-For real-time delivery, have one side follow the other:
+So Bob's agent asks the agent that owns the data, directly, instead of waiting
+for the two humans to trade Slack messages:
 
-```text
-/agent-talk:receive follow alice
-```
+> **Bob's agent:** Quick question on `customer-churn-v3`: are the
+> train/val/test splits grouped by `customer_id`, or split row-wise? I have
+> multiple rows per customer and want to rule out leakage across splits before I
+> start training.
 
-The side-by-side demo at the top of this README shows that flow from both
-sides: Alice sends the first message from an already configured user, while Bob
-runs as a separate user with a follower for Alice — her message wakes his
-session, and his reply wakes hers.
+Alice's agent checks the pipeline that produced the splits and replies:
+
+> **Alice's agent:** Good catch. v3 is split row-wise, so a customer can land in
+> more than one split. I pushed `v3.1` yesterday with a `customer_id`-grouped
+> split (same schema, grouped so no customer crosses splits) for exactly this.
+> Want me to point your loader at v3.1?
+
+Bob's agent switches to `v3.1` and trains on clean splits. Each human set one
+high-level goal; the agents settled the detail between themselves in minutes,
+each bringing context the other side did not have.
+
+That is what agent-talk is for: agents that own different pieces of a system,
+talking to each other directly instead of routing everything through their
+humans.
 
 ## Core Concepts
 
-### Users
+Under the hood, agent-talk is a thin, agent-friendly layer over the [`retalk`](https://github.com/xhluca/retalk) CLI. The whole system is four things: an **identity** (who your agent is), a **relay** (how messages travel), your **contacts** (who you trust to talk to), and the **messages** between them. The skills drive retalk through that workflow so an agent can run it on its own.
 
-agent-talk has no default user. Every Claude Code session must choose exactly one
-agent-talk user with `init`.
+### Identities
 
-Users are isolated on disk:
-
-```text
-~/.agent-talk/users/<name>/                     # global user
-<project-root>/.agent-talk/users/<name>/        # project-local user
-```
-
-Each user has its own identity, contacts, inbox, followers, and saved message
-state. Use distinct users for parallel sessions so live followers do not collide.
-
-The `init` skill records the active user for the current Claude session in:
+Every session acts as exactly one agent-talk **user**, chosen or created with the `init` skill (there is no default). A user's identity is a keypair, and its **fingerprint**, a 32-hex string, is both its address and the value peers use to verify it. Users are fully isolated on disk, each with its own contacts, inbox, and message history:
 
 ```text
-~/.agent-talk/by-session/<CLAUDE_SESSION_ID>
+~/.agent-talk/users/<name>/               # available from any project
+<project-root>/.agent-talk/users/<name>/  # scoped to one project
 ```
 
-All retalk commands are run with an explicit identity directory:
+Give parallel sessions distinct users so their background listeners do not collide. The plugin records the active user for a session at `~/.agent-talk/by-session/<CLAUDE_SESSION_ID>`, and every retalk command targets its identity explicitly with `--dir "<user>/identity"`, because Claude Code starts a fresh shell per command and an environment variable cannot reliably carry "who am I".
 
-```text
-retalk ... --dir "<user>/identity"
-```
+### The relay
 
-This is intentional: Claude Code starts a fresh shell for each Bash call, so
-environment variables are not a reliable way to carry the active identity.
+The relay is the server messages pass through, and it is untrusted by design: it only ever stores public keys and ciphertext, and deletes each message on delivery. A hostile or compromised relay learns who talks to whom and when, but never what they say. Everyone in a conversation must point at the **same** relay URL, and it has to match the server's audience exactly. Use the shared public relay to get started, or stand up your own with the `relay` skill (local, Cloudflare, Hugging Face, or a VM).
 
-### Contacts and Trust
+A relay can move after setup. retalk saves your relay as the user's default; to talk through a different one, pass `--relay <url>` on the command and update the record at `<user>/relay`. Every peer has to switch to the same new URL.
 
-Your fingerprint is both your address and the pin used to verify your public
-keys. Share fingerprints out of band, or use `share` and `import` once you
-already trust a peer.
+### Contacts and trust
 
-If retalk reports `PIN MISMATCH`, stop. That means the keys fetched from the
-relay do not match the saved fingerprint.
+There are no accounts to look anyone up in. You reach a peer by their fingerprint, obtained out of band: they run `id`, you `add` them. Adding a peer stores the fingerprint; **verifying** pins their public keys to it, so the relay can never quietly substitute different keys. If retalk reports `PIN MISMATCH`, stop, because the keys the relay returned do not match the fingerprint you trusted.
 
-### Inviting a friend (off-band)
+To bring on a peer who is not set up yet, the `init` and `add` skills generate a ready-to-paste **invite**: a short message carrying the relay, your fingerprint, and a suggested name, written for the peer's own agent to act on. You hand it over any channel the relay does not control (Slack, email, in person), and their reply gives you their fingerprint so you can add them back.
 
-To bring a friend who is not yet on agent-talk onto the same relay, the `init`
-and `add` skills can generate a ready-to-paste **invite**. You send it over a
-channel the relay does not control (Slack, email, in person); it bundles short
-setup instructions, the relay URL, your fingerprint, and a suggested name to save
-you under:
+### Messages and delivery
 
-```text
-👋 Let's talk over agent-talk — end-to-end-encrypted messaging for agents.
+Sending and receiving are end-to-end encrypted and, by default, autonomous. The skills surface the real content, the exact text sent and each message received verbatim, so you always see what your agent is actually saying and hearing. For safety, agent-talk only ever receives from peers you have designated, never the whole mailbox.
 
-1. Install it in Claude Code:
-     /plugin marketplace add xhluca/agent-talk
-     /plugin install agent-talk@agent-talk
-2. Set up on our relay — tell your agent:
-     Use agent-talk to set up comms. Relay: https://relay.example.com
-3. Add me:  /agent-talk:add alice 0123456789abcdef0123456789abcdef
-4. Reply with your own fingerprint (run /agent-talk:id) so I can add you back.
-
-Relay:       https://relay.example.com
-Add me as:   alice
-Fingerprint: 0123456789abcdef0123456789abcdef
-```
-
-Ask the agent to "make an agent-talk invite I can send to a friend" and it fills
-in your relay, fingerprint, and name.
-
-### Changing your relay
-
-The relay URL is saved as your user's default at `init` (in the retalk store and
-in `<user>/relay`), but it is **not permanent** — a relay can move (you switch
-from a local relay to a Cloudflare/Hugging Face/GCP URL, or its address changes).
-retalk has no command to re-save the default, so to use a different relay, pass
-`--relay` on the command:
-
-```text
-retalk send --peer bob "hi" --dir "<user>/identity" --relay https://new-relay.example.com
-```
-
-Update the record with `echo "https://new-relay.example.com" > "<user>/relay"`, so
-commands can use `--relay "$(cat "<user>/relay")"`. Both you and every peer must
-point at the **same** relay URL (it must equal the server's audience), so re-share
-the new URL with your peers — the invite above already includes it.
-
-### Seeing what is sent and received
-
-By default the skills surface the actual message content: `send` prints the exact
-outgoing text and recipient, and `receive` prints each incoming message verbatim
-(sender + full text) rather than just summarizing. This keeps you in the loop on
-what an autonomous agent is really saying and hearing; tell the agent to be terse
-if you want less.
-
-### Receiving
-
-agent-talk receives only from designated peers. The skills explicitly avoid
-`retalk receive --all`; `receive` reads from a peer selected during setup or from
-saved contacts one at a time.
-
-`receive follow <peer>` starts a scoped background follower:
-
-```text
-retalk receive --peer <peer> --follow --dir "<user>/identity"
-```
-
-The follower appends incoming messages to:
-
-```text
-<user>/inbox.ndjson
-```
-
-The plugin monitor in [`monitors/monitors.json`](monitors/monitors.json) runs
-[`bin/inbox-monitor.sh`](bin/inbox-monitor.sh), resolves the active user from the
-session map, and tails that spool so new lines are pushed into the Claude Code
-session. Monitor push is best effort and intended for interactive Claude Code
-sessions; the spool remains the durable source of truth.
-
-Use `receive --save-messages` if you also want retalk's sealed message history,
-which can be replayed later with `history`.
+Delivery is either **auto** (recommended) or **manual**, chosen at `init`. In auto mode a background listener follows your peer and a monitor wakes your session the moment a message lands, so replies appear on their own. In manual mode you ask the agent to check. Either way, the on-disk log at `<user>/inbox.ndjson` is the durable record, and `--save-messages` keeps a sealed history you can replay with the `history` skill.
 
 <details>
 <summary><b>Chat pane (at-chat) — outdated, kept for reference</b></summary>
@@ -358,47 +300,6 @@ skills/*/SKILL.md        Claude Code skills for retalk commands
 skills/relay/*.md        relay hosting guides
 tests/                   static, monitor, and opt-in E2E tests
 ```
-
-## Development
-
-Run the plugin from a checkout:
-
-```text
-claude --plugin-dir /path/to/agent-talk
-```
-
-Run the default test suite:
-
-```text
-python3 -m unittest discover -s tests -v
-```
-
-The default tests do not need retalk. They check manifests, skill frontmatter,
-the `receive --all` safety invariant, shell syntax, and monitor behavior.
-
-To run the relay round-trip test locally, put `retalk` and `retalk-server` on
-`PATH` and opt in:
-
-```text
-AGENT_TALK_E2E=1 python3 -m unittest discover -s tests -v
-```
-
-CI runs the non-E2E suite on Python 3.12.
-
-## Status
-
-MVP. The plugin is usable for local and relay-backed agent messaging, but a few
-parts are still intentionally conservative:
-
-- This repository is private today, so cloning it requires access (installing
-  retalk itself does not — it's on PyPI).
-- Real-time monitor injection depends on interactive Claude Code plugin monitor
-  support, and it surfaces messages as background context on your next turn
-  rather than pinging you unprompted; the inbox spool remains the source of
-  truth.
-- Relay durability depends on the host you choose. Local and Hugging Face setups
-  are convenient for testing, while a VM-backed relay is a better fit for
-  long-lived use.
 
 ## FAQ
 
