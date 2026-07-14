@@ -8,6 +8,7 @@ description: Replay this session's locally-saved conversation log — the at-res
 ```
 retalk history --json --dir "<user>/identity"                # whole conversation, oldest first
 retalk history --peer <peer> --json --dir "<user>/identity"  # one peer's thread (both directions)
+retalk history --group <name> --json --dir "<user>/identity" # one room's thread (all senders)
 ```
 
 Prints the messages this identity saved, as NDJSON
@@ -17,11 +18,20 @@ are decrypted from their at-rest seal on the way out, so this needs the passphra
 if the identity is encrypted (prefix `RETALK_PASSPHRASE=<secret>`) — but it
 **never contacts the relay**.
 
+## Group-room history
+Saved **group** messages carry two extra fields, `group` (the room's name) and
+`group_id` (its stable 32-hex id); `--group <name>` filters to just that room
+(`--peer` and `--group` can't be combined). Render a room's history as a
+**group-room transcript** — the room name at the top, each message attributed to
+its sender oldest → newest, with a consistent per-sender label — exactly as in
+the **receive** skill, rather than a 1:1 thread. Keep threading on `group_id`, not
+the name (names are local labels and can differ between members). Messages
+without those fields stay 1:1 and render as before.
+
 agent-talk saves messages by default: it sets `RETALK_SAVE_MESSAGE=1` on every
 `send` and `receive`, so **both directions** land here going forward — no opt-in
-needed. (The env var is used, not a flag, so this works on the installed retalk;
-a `retalk show` messenger-style terminal view and a `--save` flag arrive in the
-next stable release, but the plugin keeps relying on the env var.) There is no
+needed. (The env var works on every retalk version, so the plugin relies on it
+rather than the `--save` flag that shipped in retalk 0.0.12.) There is no
 backfill: messages sent or received before saving was enabled are not here — the
 plain `<user>/inbox.ndjson` spool remains the record of received mail from before.
 
@@ -29,4 +39,5 @@ plain `<user>/inbox.ndjson` spool remains the record of received mail from befor
 
 ## Next
 - **receive** — fetch newer mail.
-- **send** — continue the thread.
+- **send** — continue the thread (or the room with `--group`).
+- **group** — see or adjust the room's members.
