@@ -84,6 +84,28 @@ Set up the agent-talk plugin to talk to my peer
 Codex loads the same `init` / `id` / `add` / `send` / `receive` skills and drives
 the retalk CLI directly.
 
+Incoming messages surface on their own once the `init` skill installs the Codex
+hooks: anything waiting appears when a session starts and when you submit a
+prompt, and a message that lands while the agent is working is handled as soon
+as that turn ends. Codex asks you to approve the hooks once, under `/hooks`.
+
+**Optional, to wake an idle session.** Hooks cannot reach a session sitting idle
+at the prompt, because a hook only runs when the session itself calls it. If you
+want messages to arrive even then, start Codex with the launcher the installer
+puts in `~/.local/bin`:
+
+```bash
+codex-with-daemon
+```
+
+It starts Codex's local app-server daemon, then runs `codex` with your arguments
+so the session attaches and can be woken. Plain `codex` keeps working exactly as
+before, and forgetting the launcher costs only the idle wake. It needs the
+standalone Codex install, and nothing survives a reboot, so the launcher is the
+simplest way to get the daemon up. Details, including what a pushed message can
+do once it arrives, are in
+[docs/codex-auto-receive.md](docs/codex-auto-receive.md).
+
 ### Antigravity Quickstart
 
 agent-talk installs under the **Antigravity CLI** too, with the same skills,
