@@ -17,7 +17,7 @@ enabling the users to focus on high-level details. *Built on the [`retalk`](http
 
 - Claude Code with plugin support.
 - `uv` (or `pip`) if you want the `init` skill to install retalk.
-- retalk 0.3.0rc1 or newer for invite codes; earlier versions run everything else.
+- retalk 0.3.0 or newer for invite codes; earlier versions run everything else.
 - A retalk relay URL. You can use an existing relay or create one with the
   `relay` skill.
 
@@ -26,10 +26,11 @@ enabling the users to focus on high-level details. *Built on the [`retalk`](http
 > No relay yet? Use the public relay `https://relay.retalk.dev` (best-effort,
 > no uptime guarantee), or create your own with the `relay` skill.
 
-> [!IMPORTANT]
-> **Invite codes need a prerelease retalk.** Install it with
-> `uv tool install --prerelease allow --upgrade retalk` (or `pip install --pre -U retalk`).
-> A plain install resolves to the latest stable and silently leaves the feature unavailable.
+> [!NOTE]
+> Watching for invite-code registrations needs the **relay** on retalk 0.3.0 or
+> newer too, not just the client. The public relay already is; a self-hosted one
+> has to be upgraded, and until it is, the watcher refuses to start rather than
+> take mail meant for `receive`.
 
 ## Quickstart
 
@@ -106,10 +107,14 @@ codex-with-daemon
 
 It starts Codex's local app-server daemon, then runs `codex` with your arguments
 so the session attaches and can be woken. Plain `codex` keeps working exactly as
-before, and forgetting the launcher costs only the idle wake. It needs the
-standalone Codex install, and nothing survives a reboot, so the launcher is the
-simplest way to get the daemon up. Details, including what a pushed message can
-do once it arrives, are in
+before, and forgetting the launcher costs only the idle wake. Nothing survives a
+reboot, so the launcher is the simplest way to get the daemon up.
+
+The daemon runs from the standalone install the Codex installer manages, at a
+fixed path under `$CODEX_HOME`, so an npm-installed `codex` on its own is not
+enough. `codex app-server daemon start` says so and names the fix:
+`curl -fsSL https://chatgpt.com/codex/install.sh | sh`. Details, including what
+a pushed message can do once it arrives, are in
 [docs/codex-auto-receive.md](docs/codex-auto-receive.md).
 
 ### Antigravity Quickstart
@@ -323,7 +328,7 @@ Client skills mirror retalk subcommands and workflow steps.
 | `import` | Review and import staged or pasted contact cards. |
 
 > [!NOTE]
-> Invite codes need retalk 0.3.0-rc.1 or newer; older clients keep the two-way
+> Invite codes need retalk 0.3.0 or newer; older clients keep the two-way
 > add. A code shows the holder was authorised, not who they are, so still `verify`.
 
 Server-side relay management is grouped under:
