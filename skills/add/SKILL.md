@@ -7,14 +7,27 @@ description: Save a peer's retalk user id (their 32-hex fingerprint), optionally
 
 ```
 retalk add <fingerprint> --peer <name> --dir "<user>/identity"
-retalk add <fingerprint> --peer <name> --verify --dir "<user>/identity"   # also fetch + pin their keys now
+retalk add <fingerprint> --peer <name> --verify --dir "<user>/identity" --passphrase-path "<user>/passphrase"   # also fetch + pin their keys now
 ```
+
+A plain `add` is local and needs no passphrase. `--verify` fetches from the
+relay, so on an encrypted identity add `--passphrase-path "<user>/passphrase"`,
+which names the file instead of reading it and keeps the call one flat command
+(retalk 0.3.0-rc.1+; **init** Session rule 8).
 
 `<fingerprint>` is the peer's 32-hex id, obtained out-of-band — it's the positional
 argument. `--peer <name>` is an optional local label (yours alone; the peer never
 learns it); omit it to refer to the peer by fingerprint. If the fingerprint is
 missing, use **AskUserQuestion**. Re-adding the same fingerprint updates its name.
 Target the identity inline with `--dir "<user>/identity"`.
+
+**Is a manual add still the right step?** This skill is for a peer who sent you
+their fingerprint. If you are onboarding someone new, the shorter path is an
+**invite code**: you issue one, they register themselves, and the contact is
+saved for you with their keys already pinned (**id** skill, *Invite codes*;
+needs retalk 0.3.0-rc.1 or newer). Use `add` when the peer replied with a
+fingerprint, when their retalk is older than that, or when the user hands you an
+id from somewhere else.
 
 By default this saves an *incomplete* contact (fingerprint + optional name); keys
 are fetched/verified on first `send`/`receive`, or run **verify** now — or pass
@@ -36,7 +49,9 @@ an invite exists. Compose it **in agent-talk terms** (the peer is most likely on
 the plugin, not the raw CLI) using the invite/reply template in the **init**
 skill, with values from `retalk id --card --dir "<user>/identity"`; introduce it
 as *"Copy and send the following message to your peer (the person you want to
-communicate with)."* Only for a raw-CLI peer use the retalk-generic blocks:
+communicate with)."* Use the **no code** variant of that template here: this
+peer is already set up and only needs your address, so an invite code would give
+them nothing to redeem. Only for a raw-CLI peer use the retalk-generic blocks:
 ```
 retalk id --invite-message --as <your-name> --dir "<user>/identity"   # peer not on retalk yet
 retalk id --invite-reply --as <your-name> --dir "<user>/identity"     # replying to a peer's invite
@@ -52,4 +67,5 @@ see the relay note in **init**).
 ## Next
 - **verify** — pin the peer's keys off-band.
 - **send** — message the peer you just added.
-- **id** — hand over your id so they add you.
+- **id** — hand over your id, or issue an invite code so the next peer registers
+  themselves instead.
